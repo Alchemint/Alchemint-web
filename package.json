@@ -1,0 +1,47 @@
+{
+  "name": "alchemint",
+  "version": "1.0.0",
+  "description": "Nuxt.js project",
+  "author": "xuelei <xueleipc@163.com>",
+  "private": true,
+  "scripts": {
+    "dev": "nuxt --port 9275",
+    "build": "nuxt build",
+    "buildMain": "cross-env _ENV=mainNet nuxt build",
+    "buildTest": "cross-env _ENV=testNet nuxt build",
+    "buildPrivate": "cross-env _ENV=pri nuxt build",
+    "start": "nuxt start",
+    "generate": "nuxt generate",
+    "lint": "eslint --ext .js,.vue --ignore-path .gitignore .",
+    "precommit": "npm run lint"
+  },
+  "dependencies": {
+    "axios": "^0.18.0",
+    "cross-env": "^5.2.0",
+    "element-ui": "^2.4.2",
+    "fs": "^0.0.1-security",
+    "highcharts": "^6.2.0",
+    "lodash": "^4.17.10",
+    "mathjs": "^5.1.2",
+    "nel-neo-thinsdk": "^0.0.9",
+    "normalize.css": "^8.0.0",
+    "nuxt": "^1.4.1",
+    "qrcode": "^1.2.2",
+    "qs": "^6.5.2",
+    "readline": "^1.3.0",
+    "vue-clipboard2": "^0.2.1",
+    "vue-count-to": "^1.0.13",
+    "vue-highcharts": "^0.0.10",
+    "vue-i18n": "^8.0.0"
+  },
+  "devDependencies": {
+    "babel-eslint": "^8.2.1",
+    "babel-polyfill": "^6.26.0",
+    "eslint": "^4.15.0",
+    "eslint-friendly-formatter": "^3.0.0",
+    "eslint-loader": "^1.7.1",
+    "eslint-plugin-vue": "^4.0.0",
+    "node-sass": "^4.9.3",
+    "sass-loader": "^7.1.0"
+  }
+}

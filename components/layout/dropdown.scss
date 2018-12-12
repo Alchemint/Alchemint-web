@@ -1,0 +1,54 @@
+@import "../../assets/styles/var";
+
+.nav-right {
+  font-size: 14px;
+  cursor: pointer;
+  &-dropdown {
+    &-current {
+      line-height: 20px;
+      border: 0;
+      color: rgba(255, 255, 255, .5);
+      &:hover {
+        color: #fff;
+      }
+      .current-lang {
+        width: 30px;
+        display: inline-block;
+        vertical-align: middle;
+        margin-right: 4px;
+      }
+    }
+    &-menu {
+      background: $--nav-bg-light;
+      border: 0;
+      &__item {
+        color: $--color-white;
+        padding: 0 14px;
+        height: 28px;
+        line-height: 28px;
+        text-align: center;
+        &.is-active {
+          background: $--color-primary;
+          color: $--color-white;
+        }
+        &:hover,
+        &:focus {
+          background: $--color-primary !important;
+          color: $--color-white !important;
+        }
+        .lang-img {
+          display: inline-block;
+          vertical-align: middle;
+          width: 30px;
+        }
+      }
+      .popper__arrow {
+        border-bottom-color: $--nav-bg-light !important;
+        &:after {
+          border-bottom-color: $--nav-bg-light !important;
+        }
+      }
+    }
+  }
+}
+
