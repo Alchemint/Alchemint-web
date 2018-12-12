@@ -9,13 +9,13 @@ export const envs = [
     name: "testNet",
     label: '测试网',
     rpcUrl: "http://47.52.188.214:10332",
-    apiUrl: "http://api.alchemint.io/api/testnet"
+    apiUrl: "https://api.alchemint.io/api/testnet"
   },
   {
     name: "pri",
     label: '私链',
     rpcUrl: "http://47.52.188.214:10332",
-    apiUrl: "http://api.alchemint.io/api/pri"
+    apiUrl: "https://api.alchemint.io/api/pri"
   }
 ];
 
