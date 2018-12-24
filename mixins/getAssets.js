@@ -83,7 +83,7 @@ export default {
       return [];
     },
 
-    // global assets
+    // get global assets
     async getGlobalAssets(sarConfig) {
       let params = [this.currentUser.address];
       let data = await getAllGlobalAssets(params);
@@ -135,7 +135,7 @@ export default {
       return [];
     },
 
-    // nep5 assets
+    // get nep5 assets
     async getNep5Assets(sarConfig) {
       let params = [this.currentUser.address, 1];
       let data = await getAllNep5Assets(params);
@@ -193,7 +193,7 @@ export default {
       return [];
     },
 
-    // new token assets
+    // get new token assets
     async getNep55Assets(sarConfig, sarBTypeList, hasResuce) {
       let params = [this.currentUser.address, this.sarAddr.newToken.hash, 1];
       let data = await getAllNep55Assets(params);
@@ -222,6 +222,7 @@ export default {
           );
           item.showBalance = formatPrecision(item.balance, 3);
 
+          //can sarB liquidated
           if (hasResuce) {
             let nameParams = [this.sarAddr.sarB.hash, item.name];
             let nameResult = await getSarBByName(nameParams);
@@ -238,7 +239,6 @@ export default {
       return [];
     },
 
-    // insert default val
     insertDefaultVal(item, arr) {
       let defaultObj = find(arr, o => o.symbol === item.symbol);
       if (!defaultObj) {
@@ -265,7 +265,7 @@ export default {
       return arr;
     },
 
-    //Conversion of new Token Price
+    //transfer sarb price to usd
     getAnchorType(item, sarBList, sarConfig) {
       let tempObj = find(sarBList, o => o.name === item.name);
       let anchorType;

@@ -27,21 +27,23 @@ export function filterTime(timestamp = new Date, isFullTime = true) {
 }
 
 export function numFormat(value) {
+  //没有数值的情况
   if (!value) return '0.00';
 
+  //value为--
   if (value === '--') {
     return value;
   }
 
-  value = value + '';
+  value = value + ''; //将数值转换为字符串
 
   let arr = value.split('.');
 
-  let intPart = arr[0].toString();
-  let intPartFormat = intPart.replace(/(\d)(?=(?:\d{3})+$)/g, '$1,');
+  let intPart = arr[0].toString(); //获取整数部分
+  let intPartFormat = intPart.replace(/(\d)(?=(?:\d{3})+$)/g, '$1,'); //将整数部分逢三一断
 
   if (arr[1]) {
-    let floatPart = arr[1].toString();
+    let floatPart = arr[1].toString(); //获取小数部分
     return intPartFormat + '.' + floatPart;
   } else {
     return intPartFormat;

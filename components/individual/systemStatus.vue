@@ -25,7 +25,7 @@
           <div class="system-item__title">{{$t('individual.systemStatus.liquidateRate')}}</div>
         </div>
         <div class="system-item">
-          <div class="system-item__val">{{data.liquidate_dis_rate_c | numFormat}}</div>
+          <div class="system-item__val">{{data.liquidate_discount | numFormat}}</div>
           <div class="system-item__title">{{$t('individual.systemStatus.liquidateDis')}}</div>
         </div>
         <div class="system-item">
@@ -101,10 +101,7 @@
     },
     mixins: [sarAddr],
     async mounted() {
-      //total sneo collateralized
       let sneo_total = await this.getSneoTotal();
-
-      //total sdusd issued
       let sdusd_total = await this.getSdusdTotal();
       let sneoTotalShow = formatPrecision(
         printNumber(
@@ -125,7 +122,7 @@
         liquidate_top_rate_c, debt_top_c, liquidate_line_rateT_c, fee_rate_c, fee_rate_c_year
       } = this.sarConfig;
 
-      //overall mortgage rate
+      //global rate
       let total_rate;
       if (sdusd_total) {
         total_rate = formatPrecision(
@@ -141,8 +138,7 @@
       } else {
         total_rate = '--';
       }
-
-      //issuing fee (yearly)
+      //fee_rate_c * 1500000 *100 /10^16
       let fee_rate_c_show = Math.round(printNumber(
         bigmath.chain(bigmath.bignumber(fee_rate_c))
           .multiply(bigmath.bignumber(1500000))
@@ -151,13 +147,20 @@
           .done()
       ));
 
-      //overall issueing ceiling
       let debt_top_c_show = formatPrecision(
         printNumber(
           bigmath.chain(bigmath.bignumber(debt_top_c))
             .divide(bigmath.bignumber(bigmath.pow(10, 8)))
             .done()
         ), 2
+      );
+
+      let liquidate_discount = formatPrecision(
+        printNumber(
+          bigmath.chain(bigmath.bignumber(100))
+            .subtract(bigmath.bignumber(liquidate_dis_rate_c))
+            .done()
+        ), 0
       );
       this.data = {
         sneo_total,
@@ -172,6 +175,7 @@
         fee_rate_c_show: `${fee_rate_c_show}%`,
         debt_top_c_show,
         total_rate: total_rate,
+        liquidate_discount: `${liquidate_discount}%`
       };
     },
     methods: {
@@ -226,6 +230,7 @@
         color: #667;
         margin-top: 6px;
         font-family: PingFangSC-Regular;
+        word-wrap: break-word;
       }
     }
   }

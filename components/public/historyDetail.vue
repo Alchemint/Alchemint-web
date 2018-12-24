@@ -17,7 +17,7 @@
     </el-table-column>
     <el-table-column prop="type"
                      :label="$t('global.history.operation')"
-                     width="100">
+                     width="120">
       <template slot-scope="scope">
         <span v-if="type==='sarB'">{{scope.row.type | filterMethod($t('sarBTypes'))}}</span>
         <span v-else>{{scope.row.type | filterMethod($t('sarCTypes'))}}</span>

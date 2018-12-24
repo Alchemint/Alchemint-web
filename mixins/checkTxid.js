@@ -1,17 +1,28 @@
-import {getDrawTransaction} from '../api/global';
+import {getDrawTransaction, sendDrawTransaction} from '../api/global';
 
 export default {
   methods: {
     async checkTxid(r, draw, cb) {
-      //Operation Failed
+      //transaction failure
       let locale = this.$i18n.locale;
+
+      let transResult, txid;
       if (!draw.result) {
         let message = locale === 'en' ? 'Operation Failed' : '交易失败';
         this.$message.error(message);
         return;
+      } else {
+        transResult = draw.result[0];
+        if (!transResult.sendrawtransactionresult) {
+          let message = locale === 'en' ? 'Operation Failed' : '交易失败';
+          this.$message.error(message);
+          return;
+        }
+        txid = transResult.txid;
       }
+      console.log(txid);
 
-      //Operation Succeeded
+      //transaction succeeded, polling to see if txid was written into the block chain
       let randomNum = Math.floor(Math.random() * 1000);
       let h = this.$createElement;
       const notify = this.$notify({
@@ -43,7 +54,7 @@ export default {
         ])
       });
 
-      //notify count down
+      //setting notify Countdown
       let $notifyCountDown = document.getElementById('notifyCountDown' + randomNum);
       let countNum = 30;
       const notifyCountDownInterval = setInterval(() => {
@@ -53,9 +64,9 @@ export default {
         $notifyCountDown.innerText = countNum--;
       }, 1000);
 
-      // Polling and Inspection of Transaction Result
+      //polling and inspection of transaction result
       const interval = setInterval(async () => {
-        let draw = await getDrawTransaction([r.txid]);
+        let draw = await getDrawTransaction([txid]);
         if (!draw.result) {
           return;
         }

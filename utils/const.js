@@ -1,9 +1,9 @@
 export const envs = [
   {
-    name: "mainNet",
+    name: "neo",
     label: '主网',
     rpcUrl: "https://apiaggr.nel.group/api",
-    apiUrl: "https://api.nel.group/api"
+    apiUrl: "https://api.alchemint.io/api/mainnet"
   },
   {
     name: "testNet",
@@ -19,29 +19,28 @@ export const envs = [
   }
 ];
 
-// sar contract address
 export const sarAddrList = {
-  mainNet: {
+  neo: {
     sneo: {
-      hash: "0xc074a05e9dcf0141cbe6b4b3475dd67baf4dcb60"
+      hash: "0xa2aeccd6a7a7808b9959866f5463e5dcb911a578"
     },
     sarC: {
-      hash: "0x35f891491c17487ee40e2aa52e5d94117d3af5bf"
+      hash: "0x754c10820de5f6d9b75091c134294d6cd986c89e"
     },
     sdusd: {
-      hash: "0xb739fd47f42eb4e320fc16a3555765f05a64d432"
+      hash: "0x7146278a76c33fc6bb870fcaa428e3cdb16809ac"
     },
     sds: {
-      hash: "0xfea5b131f9a9af5e97ec421001a69e2e8fe183ae"
+      hash: "0x6fad54d8cc692fc808fd97a207836a846c217705"
     },
     sarB: {
-      hash: "0x82306f524c187537786d07857a447f061f284ad9"
+      hash: "0x203205eef5a81c093d04b5c591d8f2308598caa2"
     },
     newToken: {
-      hash: "0x3ebdbbd5a56054e7693d9b6bba7cb14d6ba8d5d6"
+      hash: "0x8e9530352c4e8b5c6c5eea5b82c7c46fd89cae6a"
     },
     oracle: {
-      hash: "0x411499182c8fc29157ae29c8fc9fa1d7b10d77e2"
+      hash: "0xfde69a7dd2a1c948977fb3ce512158987c0e2197"
     }
   },
   testNet: {
@@ -72,7 +71,7 @@ export const sarAddrList = {
       hash: "0xa2aeccd6a7a7808b9959866f5463e5dcb911a578"
     },
     sarC: {
-      hash: "0x271dd92f34e5a3dab47b8a12eb0ca0a0cee89d4b",
+      hash: "0xb4df68fd65a3ce11c7d55325f95845be100b9710",
     },
     sdusd: {
       hash: "0x46d31e98371937464b44a60bed2ba027b036da59",

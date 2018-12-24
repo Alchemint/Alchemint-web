@@ -12,8 +12,7 @@
                           :command="item"
                           :key="item.addr"
                           :class="['nav-right-dropdown-menu__item',
-                          {'is-active':currentUser.address===item.address}]">
-          {{item.address | filterUser}}
+                          {'is-active':currentUser.address===item.address}]">{{item.address | filterUser}}
         </el-dropdown-item>
       </el-dropdown-menu>
     </el-dropdown>

@@ -39,6 +39,7 @@ function logout(me) {
   me.$store.commit('SET_CURRENT_USER', null);
 }
 
+
 function loginWif(wif, me) {
   let user = eNeo.getInfoFromWIF(wif);
   setCurrentUer(user, me);
@@ -117,10 +118,13 @@ function downFile(filename, content, tips) {
   }
   eleLink.download = filename;
   eleLink.style.display = 'none';
+  //change character content to blob address
   let blob = new Blob([content]);
   eleLink.href = URL.createObjectURL(blob);
+  //trigger Click
   document.body.appendChild(eleLink);
   eleLink.click();
+  //remove
   document.body.removeChild(eleLink);
 };
 

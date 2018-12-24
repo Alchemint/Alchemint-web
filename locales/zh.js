@@ -7,8 +7,10 @@ export default {
     account: '账户',
     logout: '注销',
     help: '帮助',
-    userManual: '操作手册',
     termsService: '服务条款',
+    userManual: '操作手册',
+    video: '视频演示',
+    contact: '联系我们'
   },
   login: {
     json: '导入Keystore',
@@ -49,11 +51,11 @@ export default {
     amount: '数量',
     amountPhl: '请输入转账数量',
     transferHistory: '转账记录',
-    from: '发往',
-    to: '来自',
+    from: '来自',
+    to: '发往',
     bSystemInfo: 'SAR-B 智能合约操作',
     cSystemInfo: 'SAR-C 智能合约操作',
-    errAddr: '地址有误',
+    errAddr: '信息有误',
     category: {
       sarB: 'B端稳定币',
       global: '全局资产',
@@ -64,12 +66,18 @@ export default {
       sar: '是否将',
       sds: '转化为',
       info: '已转入您的账户中，请查收'
+    },
+    transferModal: {
+      title: '确认转账',
+      amount: '你将把',
+      to: '发往',
+      fee: '手续费',
     }
   },
   individual: {
-    statusInfo: '<li>当0&lt;SAR抵押率&lt;150%时，SAR状态栏显示为"危急"；</li>' +
-      '<li>当150%&lt;=SAR抵押率&lt;=200%时，SAR状态显示为"不安全"；</li>' +
-      '<li>当SAR抵押率&gt;200%时，SAR状态显示为"安全"。</li>',
+    statusInfo: '<li>当0&lt;SAR抵押率&lt;{lineRate}%时，SAR状态栏显示为"危急"；</li>' +
+      '<li>当{lineRate}%&lt;=SAR抵押率&lt;{topRate}%时，SAR状态显示为"不安全"；</li>' +
+      '<li>当SAR抵押率&gt;={topRate}%时，SAR状态显示为"安全"。</li>',
     relevantAssets: {
       title: '相关资产',
       type: '币种',
@@ -81,19 +89,22 @@ export default {
       amountToInput: '选择转化数量',
       amountToGet: '转化后数量',
       info: '<li>由于NEO最小单位为1，不可无限分割，故平台采用SNEO作为抵押物，其最小分割单位为0.00000001。SNEO与NEO兑换比例恒定为1:1。</li>' +
-        '<li>任何时候，用户可在阿基米德平台自由兑换SNEO和NEO，但兑换额度必须为整数，不允许键入小数点。</li>',
+        '<li>任何时候，用户可在阿基米德平台自由兑换SNEO和NEO，但兑换额度必须为整数，不允许键入小数点。</li>' +
+        '<li>若由于不当操作（区块确认过程中手动刷新或网页关闭），导致转化失败，且SNEO或NEO数量变少，请通过屏幕下方邮件联系我们。</li>',
       warnTitle: '注意',
       warnInfo: '<li>请务必不要关闭，或者手动刷新本页面！</li>' +
         '<li>否则可能会导致转换失败和数量错误！</li>' +
-        '<li>请耐心等待右上角侧2个30s倒计时结束。</li>'
+        '<li>请耐心等待右上角侧2个30s倒计时结束。</li>',
+      transferAgain: '转化不成功，请点击再次转化',
+      transferAgainBtn: '再次转化'
     },
     systemStatus: {
       title: '系统状态',
       sneoTotal: 'SNEO抵押总量',
       sdusdTotal: 'SDUSD发行总量',
       allRate: '全局抵押率',
-      liquidateRate: '清算抵押率',
-      liquidateDis: '清算价格折扣率',
+      liquidateRate: '清算触发抵押率',
+      liquidateDis: '清算折扣',
       issuingRate: '年发行费用',
       deptTop: 'SDUSD全局发行上限',
     },
@@ -104,7 +115,7 @@ export default {
       sneoCollateralized: 'SNEO已抵押额',
       sneoDrawable: 'SNEO可提取额',
       mortageRate: 'SAR抵押率',
-      liquidationPrice: 'SAR清算价格(SNEO)',
+      liquidationPrice: '清算触发价(SNEO)',
       status: 'SAR状态',
       history: '历史',
       liquidate: '清算'
@@ -115,11 +126,11 @@ export default {
       sdusdRemained: 'SDUSD可发行',
       sneoDrawable: 'SNEO可提取',
       sarRate: 'SAR抵押率',
-      feeBalance: '手续费余额(SDS)',
+      feeBalance: 'SDS余额',
       status: 'SAR状态',
       sdusdIssued: 'SDUSD已发行',
       sneoCollateralized: 'SNEO已抵押',
-      liquidationPrice: 'SAR清算价格(SNEO)',
+      liquidationPrice: '清算触发价(SNEO)',
       feeGenerated: '待缴手续费（SDS）',
       fee: '手续费',
       insufficientFee: 'SDS余额不足，请充值SDS后再回收稳定币',
@@ -136,6 +147,15 @@ export default {
       rechargeInfo: '回收稳定币时需要以SDS形式支付手续费，请确保您的SAR中有足够的SDS。',
       afterMortgageRate: '抵押率',
       afterStatus: '状态',
+      liquidationRiskInfo: '若抵押率低于{topRate}%，被清算风险较大。',
+      riskModal: {
+        title: '风险告知',
+        infoTitle: '若抵押率低于{topRate}%，被清算风险较大。',
+        infoDetail: '<li>若NEO价格下跌15%，您的SAR抵押率会有22.5%-30%的下降。</li>' +
+          '<li style="margin-top: 10px">若抵押率跌破{lineRate}%，您的SAR可被他人清算，同时系统会根据清算数额和清算折扣自动扣除一定数量的罚金。</li>',
+        cancelBtn: '我再想想',
+        confirmBtn: '我明白风险，继续执行',
+      }
     },
     myBond: {
       title: '我的BOND',
@@ -154,9 +174,9 @@ export default {
       value: '总值',
       afterLiq: '清算后的抵押率',
       afterStatus: '清算后的状态',
-      info: '<li>当单个SAR抵押率低于150%时，系统显示"清算"按钮。</li>' +
+      info: '<li>当单个SAR抵押率低于{lineRate}%时，系统显示"清算"按钮。</li>' +
         '<li>您可使用SDUSD参与清算其中一部分抵押物。</li>' +
-        '<li>若单次清算使得抵押率回升至150%-160%，则不可继续清算。</li>'
+        '<li>若单次清算使得抵押率回升至{lineRate}%-{topRate}%，则不可继续清算。</li>'
     }
   },
   institution: {
@@ -247,6 +267,10 @@ export default {
     }
   },
   envs: [
+    {
+      name: "neo",
+      label: '主网'
+    },
     {
       name: "testNet",
       label: '测试网'
@@ -355,19 +379,19 @@ export default {
     },
     {
       value: 2,
-      label: '增加抵押物'
+      label: '抵押SNEO'
     },
     {
       value: 3,
-      label: '发行稳定币'
+      label: '发行SDUSD'
     },
     {
       value: 4,
-      label: '提取抵押物'
+      label: '提取SNEO'
     },
     {
       value: 5,
-      label: '回收稳定币'
+      label: '归还SDUSD'
     },
     {
       value: 6,
@@ -391,7 +415,7 @@ export default {
     },
     {
       value: 11,
-      label: '充值手续费'
+      label: '充值SDS'
     },
     {
       value: 12,
@@ -399,7 +423,7 @@ export default {
     },
     {
       value: 13,
-      label: '提取手续费'
+      label: '提取SDS'
     },
   ],
 }

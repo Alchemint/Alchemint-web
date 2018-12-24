@@ -1,6 +1,9 @@
+/*
+** Use only on the client side of the generation mode
+*/
 if (process.browser && process.env.NODE_ENV === 'production') {
 
-  // Baidu statistics code
+  //Baidu Statistical Code
   var _hmt = _hmt || [];
   (function () {
     var hm = document.createElement("script");
@@ -10,7 +13,7 @@ if (process.browser && process.env.NODE_ENV === 'production') {
   })();
 
 
-  // Ga statistics code
+  //Google Statistical Code
   (function (i, s, o, g, r, a, m) {
     i['GoogleAnalyticsObject'] = r;
     i[r] = i[r] || function () {
@@ -22,11 +25,9 @@ if (process.browser && process.env.NODE_ENV === 'production') {
     a.src = g;
     m.parentNode.insertBefore(a, m)
   })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
-
   ga('create', 'UA-122942337-1', 'auto');
 
-
-  // Cnzz statistics code
+  //cnzz Statistical Code
   (function () {
     var hm = document.createElement("script");
     hm.src = "//w.cnzz.com/c.php?id=1274337839&async=1";
@@ -37,11 +38,14 @@ if (process.browser && process.env.NODE_ENV === 'production') {
 
 
 export default ({app: {router}, store}) => {
+  //PV statistics for each routing change
   router.afterEach((to, from) => {
     try {
+      //Tell GA to add a PV
       ga('set', 'page', to.fullPath);
       ga('send', 'pageview');
 
+      //Tell BaiDu to add a PV
       window._hmt = window._hmt || [];
       window._hmt.push(['_trackPageview', to.fullPath]);
 
@@ -51,7 +55,15 @@ export default ({app: {router}, store}) => {
 }
 
 
-// SEO event tracking code
+/**
+ * SEO Event Tracking Code
+ * @param  {String} category
+ * @param  {String} action
+ * @param  {String} label
+ * @param  {String} value
+ * @param  {String} nodeid
+ * @return {[type]}          [description]
+ */
 export function seoEvent(category, action, label, value, nodeid) {
   if (process.env.NODE_ENV === 'production') {
     _czc.push(["_trackEvent", category, action, label, value, nodeid]);

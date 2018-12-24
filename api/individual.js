@@ -17,3 +17,9 @@ export function getSarCCount(params) {
     'getsar4ccount', params,
   )
 }
+
+export function getSarCByAddr(params) {
+  return fetchGet(
+    'getOperated4CByaddr', params
+  )
+}

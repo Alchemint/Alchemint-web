@@ -45,12 +45,53 @@
           <el-button type="primary"
                      class="confirm-btn"
                      :disabled="confirmBtn"
-                     @click="handleConfirm">{{$t('global.confirmBtn')}}
+                     @click="transferModal=true">{{$t('global.confirmBtn')}}
           </el-button>
         </el-form-item>
       </el-form>
     </el-card>
     <transfer-detail></transfer-detail>
+
+    <!--confirm transfer dialog-->
+    <el-dialog class="sar-modal wallet-transfer-modal"
+               :title="$t('wallet.transferModal.title')"
+               width="360px"
+               label-position="top"
+               center
+               :show-close="false"
+               stripe
+               :close-on-click-modal="false"
+               :close-on-press-escape="false"
+               :visible.sync="transferModal">
+      <div class="wallet-transfer-modal__content">
+        <div class="item">
+          <div>{{$t('wallet.transferModal.amount')}}</div>
+          <div class="detail">{{formData.amount}}&nbsp;{{formData.symbol}}</div>
+        </div>
+        <div class="item">
+          <div>{{$t('wallet.transferModal.to')}}</div>
+          <div class="detail">{{formData.toAddress}}</div>
+        </div>
+        <div class="item">
+          <div>{{$t('wallet.transferModal.fee')}}</div>
+          <div class="detail">0.00</div>
+        </div>
+        <div v-if="transferErr" class="warn-info">
+          <i class="el-icon-warning"></i>
+          <span>&nbsp;{{transferErr}}</span>
+        </div>
+      </div>
+      <div slot="footer">
+        <el-button class="sar-modal-btn" @click="cancelTransferModal">
+          {{$t('global.cancelBtn')}}
+        </el-button>
+        <el-button class="sar-modal-btn"
+                   type="primary"
+                   @click="handleConfirm">
+          {{$t('global.confirmBtn')}}
+        </el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -81,12 +122,14 @@
         formData: {
           symbol: '',
           toAddress: '',
-          amount: 0,
+          amount: 0
         },
         amountMax: 0,
         historyList: null,
         loading: true,
         disabled: false,
+        transferModal: false,
+        transferErr: '',
       }
     },
     computed: {
@@ -111,7 +154,7 @@
     filters: {
       numFormat,
     },
-    mounted() {
+    async mounted() {
       this.formData.symbol = this.assets[0].symbol;
       this.amountMax = find(this.assets, o => o.symbol === this.formData.symbol).balance;
     },
@@ -128,6 +171,7 @@
           return;
         }
         this.disabled = true;
+
         const loading = this.$loading({
           lock: true,
           text: '',
@@ -136,8 +180,6 @@
         });
 
         let {symbol, toAddress, amount} = this.formData;
-
-        //get txid
         let tempObj = find(this.assets, o => o.symbol === symbol);
         let {type, decimals, assetid} = tempObj;
         let {address, wif} = this.currentUser;
@@ -151,7 +193,7 @@
             } catch (e) {
               loading.close();
               this.disabled = false;
-              this.$message.error(this.$t('wallet.errAddr'))
+              this.transferErr = this.$t('wallet.errAddr');
             }
           }
         }
@@ -168,7 +210,7 @@
           } catch (e) {
             loading.close();
             this.disabled = false;
-            this.$message.error(this.$t('wallet.errAddr'))
+            this.transferErr = this.$t('wallet.errAddr');
           }
         }
         if (type === 'nep55') {
@@ -191,7 +233,7 @@
           } catch (e) {
             loading.close();
             this.disabled = false;
-            this.$message.error(this.$t('wallet.errAddr'))
+            this.transferErr = this.$t('wallet.errAddr');
           }
         }
         if (!r) {
@@ -203,6 +245,11 @@
           loading.close();
           location.reload();
         });
+      },
+
+      cancelTransferModal() {
+        this.transferModal = false;
+        this.transferErr = '';
       }
     }
   }
@@ -226,6 +273,26 @@
     }
     .confirm-btn {
       width: 160px;
+    }
+  }
+
+  .wallet-transfer-modal {
+    &__content {
+      color: #99a;
+      padding: 10px;
+      .item {
+        margin-top: 30px;
+      }
+      .detail {
+        margin-top: 10px;
+        color: #334;
+        font-weight: bold;
+      }
+      .warn-info {
+        font-size: 12px;
+        color: $--color-danger;
+        margin-top: 10px;
+      }
     }
   }
 </style>

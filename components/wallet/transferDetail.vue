@@ -3,7 +3,7 @@
     <div slot="header" class="border-card-header">
       <span class="border-card-header__title">{{$t('wallet.transferHistory')}}</span>
     </div>
-    <!--assets type-->
+    <!--transfer category-->
     <div class="transfer-history-search">
       <el-button :type="search==='sdusd'?'primary':'default'"
                  :disabled="loading"
@@ -23,12 +23,12 @@
       </el-button>
     </div>
 
-    <!--category detail-->
+    <!--transfer list-->
     <div v-loading="loading"
          :element-loading-text="$t('global.loading')"
          element-loading-spinner="el-icon-loading">
       <div v-if="historyList" class="transfer-history-data">
-        <!--not global asset-->
+        <!--not global transfer-->
         <div v-if="search!=='global'"
              class="transfer-history-item"
              v-for="item in historyList"
@@ -38,7 +38,7 @@
             <template v-if="item.isFrom">
               <span class="from"><b style="margin-right: 20px">- {{item.value | numFormat}}</b>{{item.name}}</span>
               <span><i class="el-icon-upload2" style="margin-right: 6px"></i>
-                  {{$t('wallet.from')}}：
+                  {{$t('wallet.to')}}：
                 <span v-if="search==='sdusd' || search==='nep5'">{{item.to?item.to:$t('wallet.cSystemInfo')}}</span>
                 <span v-if="search==='nep55'">{{item.to?item.to:$t('wallet.bSystemInfo')}}</span>
               </span>
@@ -54,7 +54,7 @@
             <template v-else>
               <span class="to"><b style="margin-right: 20px">+ {{item.value | numFormat}}</b>{{item.name}}</span>
               <span><i class="el-icon-download" style="margin-right: 6px"></i>
-                  {{$t('wallet.to')}}：
+                  {{$t('wallet.from')}}：
                 <span v-if="search==='sdusd' || search==='nep5'">{{item.from?item.from:$t('wallet.cSystemInfo')}}</span>
                 <span v-if="search==='nep55'">{{item.from?item.from:$t('wallet.bSystemInfo')}}</span>
               </span>
@@ -70,7 +70,7 @@
           </div>
         </div>
 
-        <!--global asset-->
+        <!--global transfer-->
         <div v-if="search==='global'">
           <div v-for="item in historyList"
                :class="['history-global',
@@ -190,7 +190,7 @@
       await this.launchSdusdTransfer();
     },
     methods: {
-      //asset transfer
+      //toggle transfer type
       async launchSdusdTransfer() {
         this.search = 'sdusd';
         this.loading = true;
@@ -227,7 +227,7 @@
         this.currentSarAddr = sarAddr;
       },
 
-      //assets transfer detail
+      //get transfer list
       async getNep5Transfer() {
         let params;
         if (this.search === 'nep5') {
@@ -245,11 +245,13 @@
 
         let sarAddr = this.currentSarAddr;
 
+        //add date,time,isFrom
         for (let i = 0, len = historyList.length; i < len; i++) {
           let item = historyList[i];
           let tempObj = find(sarAddr, o => o.assetid === item.asset);
           item.name = tempObj ? tempObj.symbol : '';
           item.isFrom = this.currentUser.address === item.from;
+          //get time //get time
           let blockTime = await getBlockTime([item.blockindex]);
           if (blockTime.result) {
             item.date = formatTime((blockTime.result[0].time * 1000), true);
@@ -267,6 +269,7 @@
           return;
         }
 
+        //add date,time,isFrom
         forEach(historyList, item => {
           item.isFrom = this.currentUser.address === item.from;
           item.date = formatTime((item.blocktime.$date), true);
@@ -289,7 +292,7 @@
         this.loading = false;
       },
 
-      //assets transfer count
+      //get transfer count
       getSdusdCount() {
         let params = [this.currentUser.address, this.sarAddr.sdusd.hash];
         getNep5TransferCount(params).then(res => {
@@ -323,6 +326,7 @@
         })
       },
 
+      //page change
       handleCurrentChange(val) {
         this.loading = true;
         this.currentPage = val;
@@ -345,8 +349,9 @@
         }
       },
 
-      //global asset detail by txid
+      //get global transfer detail by txid
       async handleGlobalDetail(obj) {
+        //flexible btn
         if (obj.expanded) {
           obj.expanded = !obj.expanded;
         } else {
@@ -357,6 +362,7 @@
           return;
         }
 
+        //get detail
         this.$set(obj, 'loading', true);
         let _globalDetail = await getGlobalTransferDetail([obj.txid]);
         let globalDetail = _globalDetail.result;
@@ -367,9 +373,11 @@
         this.$set(obj, 'detail', globalDetail[0]);
         this.$set(obj, 'type', globalDetail[0].type);
 
+        //vout
         let vout = cloneDeep(globalDetail[0].vout);
         this.$set(obj, 'vout', this.filterNeoOrGas(vout));
 
+        //vin
         let vin = cloneDeep(globalDetail[0].vin);
         let inResult = [];
         for (let i = 0, len = vin.length; i < len; i++) {
@@ -391,6 +399,7 @@
         }
         for (let i = 0, len = arr.length; i < len; i++) {
           let item = arr[i];
+          //judge is neo or gas
           for (let key in eNeo.config) {
             if (eNeo.config[key] === item.asset) {
               if (key === 'neoId') {
@@ -507,7 +516,6 @@
           line-height: 30px;
         }
         &__detail {
-          //position: relative;
           @include clearfix;
           margin-top: 10px;
           line-height: 20px;

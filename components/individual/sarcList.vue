@@ -100,12 +100,13 @@
                      plain
                      class="small-btn"
                      :disabled="scope.row.status!=='3' || currentUser.address===scope.row.addr"
-                     @click="opSettleSar(scope.row)">{{$t('global.liquidate')}}
+                     @click="opLiquidationModal(scope.row)">{{$t('global.liquidate')}}
           </el-button>
         </template>
       </el-table-column>
     </el-table>
 
+    <!--pagination-->
     <div class="pagination-container clearfix" v-if="totalPage>0">
       <el-pagination background
                      layout="prev, pager, next"
@@ -124,7 +125,6 @@
       </div>
     </div>
 
-
     <!--history dialog-->
     <el-dialog class="sar-modal history-modal"
                :title="$t('global.history.sarOperationHistory')"
@@ -137,26 +137,25 @@
       <history-detail v-if="historyList" :data="historyList" type="sarC"></history-detail>
     </el-dialog>
 
-    <!--liquidate dialog-->
-    <el-dialog class="sar-modal settle-modal"
+    <!--liquidation sar dialog-->
+    <el-dialog class="sar-modal"
                :title="$t('individual.liquidateModal.title')"
-               width="360px"
                label-position="top"
                center
                :show-close="true"
                stripe
                :close-on-click-modal="false"
                :close-on-press-escape="false"
-               :before-close="beforeSettleClose"
-               :visible.sync="settleModal">
-      <el-form ref="settleForm"
+               :before-close="beforeLiquidationClose"
+               :visible.sync="liquidationModal">
+      <el-form ref="liquidationForm"
                label-position="top"
                :rules="rules"
-               :model="settleForm"
+               :model="liquidationForm"
                class="settle-form clearfix">
         <el-form-item :label="$t('individual.liquidateModal.sdusdAmount')" class="fl" prop="SDUSD">
           <div>
-            <el-input v-model.number="settleForm.SDUSD"
+            <el-input v-model.number="liquidationForm.SDUSD"
                       size="small"
                       v-if="currentSar"
                       :disabled="Number(currentSar.ratioAvail)<=1"
@@ -164,46 +163,40 @@
                       @change="handleSDUSDChange"></el-input>
             <i class="el-icon-caret-right"></i>
           </div>
-          <div class="form-tip">{{$t('individual.liquidateModal.value')}}：${{settleForm.SDUSDV}}</div>
+          <div class="form-value">{{$t('individual.liquidateModal.value')}}：${{liquidationForm.SDUSDV}}</div>
         </el-form-item>
         <el-form-item :label="$t('individual.liquidateModal.sneoAmount')" class="fl">
-          <el-input v-model.number="settleForm.SNEO"
+          <el-input v-model.number="liquidationForm.SNEO"
                     disabled
                     size="small"
                     style="width: 130px"></el-input>
-          <div class="form-tip" v-if="sarConfig">
-            {{$t('individual.liquidateModal.value')}}：${{settleForm.SNEOV}}
+          <div class="form-value" v-if="sarConfig">
+            {{$t('individual.liquidateModal.value')}}：${{liquidationForm.SNEOV}}
           </div>
         </el-form-item>
       </el-form>
       <div>
-        <div class="resuce-info mt-30 clearfix">
+        <div class="liquidated-info mt-30 clearfix">
           <span class="fl">{{$t('individual.liquidateModal.afterLiq')}}</span>
-          <span class="fr">{{settleForm.rateShow}}</span>
+          <span class="fr">{{liquidationForm.rateShow}}</span>
         </div>
-        <div class="resuce-info mt-20 clearfix">
+        <div class="liquidated-info mt-20 clearfix">
           <span class="fl">{{$t('individual.liquidateModal.afterStatus')}}
-             <el-tooltip popper-class="global-popper"
-                         placement="bottom-start"
-                         offset="100"
-                         effect="light">
-              <ul slot="content" class="tooltip-ul" v-html="$t('individual.statusInfo')"></ul>
-              <icon-font name="icon-wenhao" class="green"></icon-font>
-            </el-tooltip>
+            <status-tooltip :sar-config="sarConfig"></status-tooltip>
           </span>
-          <span :class="['fr',{'green':settleForm.status==='0',
-                               'blue':settleForm.status==='1',
-                               'yellow':settleForm.status==='2',
-                               'red':settleForm.status==='3'}]">
-            {{settleForm.status | filterMethod($t('sarCStatus'))}}
+          <span :class="['fr',{'green':liquidationForm.status==='0',
+                               'blue':liquidationForm.status==='1',
+                               'yellow':liquidationForm.status==='2',
+                               'red':liquidationForm.status==='3'}]">
+            {{liquidationForm.status | filterMethod($t('sarCStatus'))}}
           </span>
         </div>
       </div>
       <div slot="footer">
-        <el-button class="sar-modal-btn" @click="beforeSettleClose">
+        <el-button class="sar-modal-btn" @click="beforeLiquidationClose">
           {{$t('global.cancelBtn')}}
         </el-button>
-        <el-button class="sar-modal-btn" type="primary" :disabled="disabled" @click="settleSar">
+        <el-button class="sar-modal-btn" type="primary" :disabled="disabled" @click="liquidateSar">
           {{$t('global.confirmBtn')}}
         </el-button>
       </div>
@@ -220,9 +213,10 @@
   import {sendDrawTransaction} from '../../api/global'
   import checkTxid from '../../mixins/checkTxid'
   import historyDetail from '../public/historyDetail'
+  import statusTooltip from './statusTooltip'
 
   export default {
-    name: 'SarcList',
+    name: 'SarCList',
     props: {
       currentUser: {},
       sarConfig: {
@@ -235,10 +229,10 @@
       return {
         sarCList: null,
         currentSar: null,
-        settleModal: false,
+        liquidationModal: false,
         historyModal: false,
         historyList: null,
-        settleForm: {
+        liquidationForm: {
           SDUSD: '',
           SDUSDV: '',
           SNEO: '',
@@ -252,7 +246,7 @@
           SDUSD: [
             {
               required: true, validator: this.validatorSDUSD, trigger: 'blur'
-            }
+            },
           ],
         },
         totalPage: 0,
@@ -274,6 +268,7 @@
     },
     components: {
       historyDetail,
+      statusTooltip
     },
     async mounted() {
       this.getSarCList(1);
@@ -293,7 +288,10 @@
           }, [
             h('ul', {
               domProps: {
-                innerHTML: this.$t('individual.liquidateModal.info')
+                innerHTML: this.$t('individual.liquidateModal.info', {
+                  'lineRate': this.sarConfig && this.sarConfig.liquidate_line_rate_c,
+                  'topRate': this.sarConfig && this.sarConfig.liquidate_top_rate_c
+                })
               },
               class: 'tooltip-ul',
             },),
@@ -315,6 +313,7 @@
 
       },
 
+      //sarC list
       async getSarCList(page) {
         let scAddr = this.sarAddr.sarC.hash;
         let params = [1, scAddr, this.perPageNum, page || 1];
@@ -363,56 +362,67 @@
         this.currentPage = val;
       },
 
-      //liquidation
-      opSettleSar(item) {
-        this.settleModal = true;
+      //liquidate sar
+      opLiquidationModal(item) {
+        this.liquidationModal = true;
         this.currentSar = item;
-        this.settleForm.cir_discount_rate = this.getCirDiscountRate();
-        this.settleForm.SDUSD = this.getSDUSDMax();
-        this.getSettleFormVal();
+        this.liquidationForm.cir_discount_rate = this.getCirDiscountRate();
+        this.liquidationForm.SDUSD = this.getSDUSDMax();
+        this.getLiquidationFormVal();
       },
-      getSettleFormVal() {
+      getLiquidationFormVal() {
         let {sneo_price, liquidate_line_rate_c} = this.sarConfig;
-        let {sarLocked, sarHasDrawed} = this.currentSar;
+        let {sarLocked, sarHasDrawed, ratioAvail} = this.currentSar;
         let canClearNeo;
 
         //sdusd amount
         let mount = formatPrecision(
           printNumber(
-            bigmath.chain(bigmath.bignumber(this.settleForm.SDUSD))
+            bigmath.chain(bigmath.bignumber(this.liquidationForm.SDUSD))
               .multiply(bigmath.bignumber(bigmath.pow(10, 8)))
               .done()
           ), 0
         );
         mount = +mount;
 
-        //sneo amount
-        this.settleForm.SNEO = formatPrecision(
-          printNumber(
-            bigmath.chain(bigmath.bignumber(this.settleForm.SDUSD))
-              .multiply(bigmath.bignumber(100))
-              .multiply(bigmath.bignumber(bigmath.pow(10, 8)))
-              .divide(bigmath.bignumber(sneo_price))
-              .divide(bigmath.bignumber(this.settleForm.cir_discount_rate))
-              .done()
-          )
-        );
 
-        //sneo value and sdusd value
-        this.settleForm.SDUSDV = formatPrecision(this.settleForm.SDUSD, 2);
-        this.settleForm.SNEOV = formatPrecision(
+        //sneo amount
+        if (+ratioAvail > 1) {
+          this.liquidationForm.SNEO = formatPrecision(
+            printNumber(
+              bigmath.chain(bigmath.bignumber(this.liquidationForm.SDUSD))
+                .multiply(bigmath.bignumber(100))
+                .multiply(bigmath.bignumber(bigmath.pow(10, 8)))
+                .divide(bigmath.bignumber(sneo_price))
+                .divide(bigmath.bignumber(this.liquidationForm.cir_discount_rate))
+                .done()
+            )
+          );
+        } else {
+          this.liquidationForm.SNEO = formatPrecision(
+            printNumber(
+              bigmath.chain(bigmath.bignumber(sarLocked))
+                .divide(bigmath.bignumber(bigmath.pow(10, 8)))
+                .done()
+            )
+          )
+        }
+
+        //sneo and sdusd value
+        this.liquidationForm.SDUSDV = formatPrecision(this.liquidationForm.SDUSD, 2);
+        this.liquidationForm.SNEOV = formatPrecision(
           printNumber(
-            bigmath.chain(bigmath.bignumber(this.settleForm.SNEO))
+            bigmath.chain(bigmath.bignumber(this.liquidationForm.SNEO))
               .multiply(bigmath.bignumber(sneo_price))
               .divide(bigmath.bignumber(bigmath.pow(10, 8)))
               .done()
           ), 2
         );
 
-        //can clear sneo
+        //can clear neo
         canClearNeo = formatPrecision(
           printNumber(
-            bigmath.chain(bigmath.bignumber(this.settleForm.SNEO))
+            bigmath.chain(bigmath.bignumber(this.liquidationForm.SNEO))
               .multiply(bigmath.bignumber(bigmath.pow(10, 8)))
               .done()
           )
@@ -455,15 +465,15 @@
           rateShow = formatPrecision(rate, 2) + '%';
         }
         rate = +rate;
-        this.settleForm.rate = rate;
-        this.settleForm.rateShow = rateShow;
+        this.liquidationForm.rate = rate;
+        this.liquidationForm.rateShow = rateShow;
 
         //liquidated status
         let status;
-        if (rate > (liquidate_line_rate_c + 50)) {
+        if (rate >= (liquidate_line_rate_c + 50)) {
           status = '1';
         }
-        if (rate >= liquidate_line_rate_c && rate <= (liquidate_line_rate_c + 50)) {
+        if (rate >= liquidate_line_rate_c && rate < (liquidate_line_rate_c + 50)) {
           status = '2';
         }
         if (rate < liquidate_line_rate_c) {
@@ -473,7 +483,7 @@
         if (sarLocked === 0 || sarHasDrawed === 0 || rate === 0) {
           status = '0';
         }
-        this.settleForm.status = status;
+        this.liquidationForm.status = status;
       },
       validatorSDUSD(rule, value, callback) {
         let sdusdVal = find(this.assets, o => o.symbol === 'SDUSD');
@@ -494,7 +504,7 @@
       },
       getSDUSDMax() {
         let {sneo_price, liquidate_top_rate_c} = this.sarConfig;
-        let {sarLocked, sarHasDrawed} = this.currentSar;
+        let {sarLocked, sarHasDrawed, ratioAvail} = this.currentSar;
 
         let molecule = bigmath.chain(
           bigmath.bignumber(
@@ -505,7 +515,7 @@
         ).subtract(
           bigmath.bignumber(
             bigmath.chain(bigmath.bignumber(100))
-              .divide(bigmath.bignumber(this.settleForm.cir_discount_rate))
+              .divide(bigmath.bignumber(this.liquidationForm.cir_discount_rate))
               .done()
           )
         ).done();
@@ -531,12 +541,13 @@
             bigmath.chain(bigmath.bignumber(denominator))
               .divide(bigmath.bignumber(molecule))
               .divide(bigmath.bignumber(bigmath.pow(10, 8)))
-              .subtract(bigmath.bignumber(0.1))
+              .subtract(bigmath.bignumber(0.0001))
               .done()
           )
         );
         result = +result;
 
+        //sarHasDrawed
         let mount = formatPrecision(
           printNumber(
             bigmath.chain(bigmath.bignumber(sarHasDrawed))
@@ -545,33 +556,37 @@
           )
         );
         mount = +mount;
-        return result > mount ? mount : result;
+        if (+ratioAvail > 1) {
+          return result > mount ? mount : result;
+        } else {
+          return mount;
+        }
       },
       handleSDUSDChange(val) {
         if (Number(val)) {
           let max = this.getSDUSDMax();
-          this.settleForm.SDUSD = this.settleForm.SDUSD > max ? max : this.settleForm.SDUSD;
-          this.getSettleFormVal();
+          this.liquidationForm.SDUSD = this.liquidationForm.SDUSD > max ? max : this.liquidationForm.SDUSD;
+          this.getLiquidationFormVal();
         }
       },
-      beforeSettleClose() {
-        this.$refs['settleForm'].resetFields();
-        this.settleModal = false;
+      beforeLiquidationClose() {
+        this.$refs['liquidationForm'].resetFields();
+        this.liquidationModal = false;
       },
-      settleSar() {
-        this.$refs['settleForm'].validate((valid) => {
+      liquidateSar() {
+        this.$refs['liquidationForm'].validate((valid) => {
           if (valid) {
             if (this.disabled) {
               return;
             }
             this.disabled = true;
-            this.getSettleSar();
+            this.launchLiquidateSar();
           } else {
             return false;
           }
         });
       },
-      async getSettleSar() {
+      async launchLiquidateSar() {
         const loading = this.$loading({
           lock: true,
           text: '',
@@ -582,7 +597,7 @@
         let {wif, address} = this.currentUser;
         let amount = formatPrecision(
           printNumber(
-            bigmath.chain(bigmath.bignumber(this.settleForm.SDUSD))
+            bigmath.chain(bigmath.bignumber(this.liquidationForm.SDUSD))
               .multiply(bigmath.bignumber(bigmath.pow(10, 8)))
               .done()
           ), 0
@@ -600,12 +615,12 @@
 
         sendDrawTransaction([r.rawData]).then(draw => {
           this.checkTxid(r, draw, () => {
-            this.settleModal = false;
+            this.liquidationModal = false;
             loading.close();
             location.reload();
           });
         }).catch(() => {
-          this.settleModal = false;
+          this.liquidationModal = false;
           this.disabled = false;
         });
 
@@ -615,22 +630,18 @@
           return 'red'
         }
       },
-
       getCirDiscountRate() {
         let currentRate = this.currentSar.ratioAvail;
         currentRate = +currentRate;
-
         let cirDiscountRate = Math.ceil(100 / currentRate);
-
         let discountRate = this.sarConfig.liquidate_dis_rate_c;
         return cirDiscountRate > discountRate ? cirDiscountRate : discountRate;
       },
 
-      //history detail
+      //get sar history detail
       async getHistoryDetail(item) {
-        let params = [item.sarTxid, 10000, 1];
-        let _historyList = await
-          getSarCHistory(params);
+        let params = [item.sarTxid, 100, 1];
+        let _historyList = await getSarCHistory(params);
         let historyList = _historyList.result;
         if (historyList) {
           this.historyList = historyList;
@@ -665,33 +676,31 @@
     line-height: 20px
   }
 
-  .el-icon-caret-right {
-    display: inline-block;
-    width: 16px;
-    margin: 0 17px;
-  }
+  .sar-modal {
+    .el-icon-caret-right {
+      display: inline-block;
+      width: 16px;
+      margin: 0 17px;
+    }
 
-  .resuce-info {
-    color: #667;
-    line-height: 30px;
-    border-bottom: 1px solid $--border-color-base;
-  }
+    //after liquidated info
+    .liquidated-info {
+      color: #667;
+      line-height: 30px;
+      border-bottom: 1px solid $--border-color-base;
+    }
 
-  .form-tip {
-    color: #9999AA;
-    width: 130px;
-    overflow-x: hidden;
+    //liquidation form bond and sneo value
+    .form-value {
+      color: #9999AA;
+      width: 130px;
+      overflow-x: hidden;
+    }
   }
 </style>
 
 <style lang="scss">
   @import "../../assets/styles/var";
-
-  .no-header-modal {
-    .el-dialog__header {
-      display: none;
-    }
-  }
 
   .liquidate-popper {
     border-color: $--color-primary;

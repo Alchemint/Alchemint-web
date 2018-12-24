@@ -94,7 +94,7 @@
       </el-table>
     </el-card>
 
-    <!--liquidation dialog-->
+    <!--清算模态框-->
     <el-dialog class="sar-modal settle-modal"
                :title="$t('wallet.liquidate.title')"
                width="360px"
@@ -136,7 +136,7 @@
 <script>
   let qrCode = require('qrcode');
   import sarAddr from '../../mixins/getSarAddr'
-  import {sendDrawTransaction, getStorage} from '../../api/global'
+  import {sendDrawTransaction} from '../../api/global'
   import checkTxid from '../../mixins/checkTxid'
   import {bigmath, formatPrecision, printNumber} from '../../utils'
   import getSarB from '../../mixins/getSarB'

@@ -10,7 +10,7 @@ export default {
     }
   },
   methods: {
-    // sar basic info
+    //get sar basic info
     async getSarB(addr) {
       let scAddr = this.sarAddr.sarB.hash;
       let params = [
@@ -49,7 +49,7 @@ export default {
       }
     },
 
-    // calculate sar
+    //calculate margin rate and other values
     async getSarInfo(addr) {
       let sarBasicInfo = await this.getSarB(addr);
       if (sarBasicInfo) {
@@ -60,7 +60,7 @@ export default {
         let {sds_price, liquidate_line_rate_b} = this.sarConfig;
         let anchorPrice = this.sarConfig[anchorType];
 
-        //sarLocked and sarHasDrawed show amount
+        //sarLocked and sarHasDrawed display data
         let sarLockedShow = formatPrecision(
           printNumber(
             bigmath.chain(bigmath.bignumber(sarLocked))
@@ -76,7 +76,7 @@ export default {
           ), 3
         );
 
-        // Calculate the sarLocked and sarHasDrawed of the dollar
+        //Calculate the sarLocked and sarHasDrawed of the dollar
         let sarLockedTranUsd, sarHasDrawedTranUsd;
         sarLockedTranUsd = formatPrecision(
           printNumber(
@@ -95,7 +95,7 @@ export default {
           ), 3
         );
 
-        //wen can draw
+        //sneo Drawable
         let allDraw, wenCanDraw;
         allDraw = formatPrecision(
           printNumber(
@@ -116,7 +116,7 @@ export default {
           )
         );
 
-        //free sds
+        //can free sdusd
         let availSdsCanfree, hasDrawSds;
         hasDrawSds = formatPrecision(
           printNumber(
@@ -139,7 +139,7 @@ export default {
         );
 
 
-        //ratio avail
+        //current rate
         let ratioAvail, ratioAvailShow;
 
         if (sarHasDrawed) {
@@ -188,6 +188,7 @@ export default {
       }
     },
 
+    //check whether contracts in newToken issue currency
     async getTokenName(name) {
       let scAddr = this.sarAddr.newToken.hash;
       let params = [
@@ -206,6 +207,7 @@ export default {
       return tokenName;
     },
 
+    //get new token balance
     async getNewBalance(name, addr) {
       let scAddr = this.sarAddr.newToken.hash;
       let params = [
@@ -248,6 +250,7 @@ export default {
       };
     },
 
+    //get Sds info
     async getNep5Info() {
       let scAddr = this.sarAddr.sds.hash;
       let params = [
@@ -276,6 +279,9 @@ export default {
       let scHash = eNeo.emitParams(scAddr, params);
       let _r = await invokeScript([scHash]);
       let r = _r["result"][0]["stack"];
+      if (Array.isArray(r) && r.length === 0) {
+        return;
+      }
       let decimals = +r[3].value;
       let balance = eNeo.hex2Integer(r[0].value);
       let totalSupply = eNeo.hex2Integer(r[4].value);

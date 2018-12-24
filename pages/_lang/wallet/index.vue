@@ -28,6 +28,7 @@
   import transfer from '~/components/wallet/transfer.vue'
   import {mapGetters} from 'vuex'
   import getAssets from '~/mixins/getAssets'
+  import {invokeScript} from '../../../api/global'
 
   export default {
     name: 'Wallet',
@@ -63,6 +64,7 @@
       if (!tab) {
         this.changeRouteQuery({tab: 'assets'}, false);
       }
+      //this.getBalance();
     },
     methods: {
       handleTabClick(tab) {
@@ -75,6 +77,18 @@
           query: onlyTab ? {...queryObj} : {...this.$route.query, ...queryObj},
         });
       },
+      /*async getBalance() {
+        let scAddr = this.sarAddr.sdusd.hash;
+        let params = [
+          {
+            param: ['(addr)' + this.currentUser.address],
+            method: 'balanceOf',
+          }
+        ];
+        let scHash = eNeo.emitParams(scAddr, params);
+        let _r = await invokeScript([scHash]);
+        console.log(eNeo.hex2Integer(_r.result[0].stack[0].value));
+      }*/
     }
   }
 </script>

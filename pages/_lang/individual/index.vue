@@ -1,5 +1,11 @@
 <template>
   <div class="individual">
+    <!--<div>
+      <el-button type="primary"
+                 class="mt-30"
+                 @click="handleTransferContract">用户自主迁移
+      </el-button>
+    </div>-->
     <div class="clearfix" v-if="currentUser">
       <my-asset class="fl"
                 :assets="assets"
@@ -68,7 +74,7 @@
       this.getBondAuthority();
     },
     methods: {
-      // sar c basic info
+      //get sar basic info
       async getSarC(addr) {
         let scAddr = this.sarAddr.sarC.hash;
         let params = [
@@ -98,7 +104,6 @@
          *  args[8] = sarInfo.lastHeight;
          *  args[9]=  sarInfo.fee;
          *  args[10]= sarInfo.sdsFee; */
-
         let sarTxid = eNeo.endianChange(arr[1].value);
         let sarLocked, sarHasDrawed, status, bondLocked, bondDrawed, lastHeight, fee, sdsFee;
         if (arr[2].type === 'Integer') {
@@ -158,8 +163,7 @@
         }
       },
 
-
-      // calculate sar
+      //calculate margin rate and other values
       async getSarInfo(sarConfig, addr) {
         let sarBasicInfo = await this.getSarC(addr);
         if (!sarBasicInfo) {
@@ -168,6 +172,7 @@
         let {sarLocked, sarHasDrawed, sdsFee, fee, bondLocked, bondDrawed} = sarBasicInfo;
         let {sneo_price, liquidate_line_rate_c, sds_price} = sarConfig;
 
+        //sarLocked and sarHasDrawed display data
         let sarLockedShow = formatPrecision(
           printNumber(
             bigmath.chain(bigmath.bignumber(sarLocked))
@@ -183,6 +188,7 @@
           ), 2
         );
 
+        //bondLocked and bondDrawed display data
         let bondLockedShow, bondDrawedShow;
         bondLockedShow = formatPrecision(
           printNumber(
@@ -199,6 +205,7 @@
           ), 2
         );
 
+        //sdsFee and fee display data
         let sdsFeeShow;
         if (sdsFee) {
           sdsFeeShow = formatPrecision(
@@ -225,14 +232,14 @@
           feeShow = formatPrecision(0, 2);
         }
 
-
+        //can draw fee(sds)
         let feeToSds = formatPrecision(
           printNumber(
             bigmath.chain(bigmath.bignumber(fee))
               .divide(bigmath.bignumber(sds_price))
               .multiply(bigmath.bignumber(bigmath.pow(10, 8)))
               .done()
-          ), 0
+          )
         );
         let wenCanSdsFee = formatPrecision(
           printNumber(
@@ -244,6 +251,7 @@
         );
 
 
+        //sds Drawable
         let allSdusd, wenCanDraw, wenCanDrawShow;
 
         allSdusd = formatPrecision(
@@ -254,7 +262,7 @@
               .multiply(bigmath.bignumber(100))
               .divide(bigmath.bignumber(bigmath.pow(10, 8)))
               .done()
-          ), 0
+          )
         );
 
         wenCanDraw = formatPrecision(
@@ -268,6 +276,7 @@
 
         wenCanDrawShow = formatPrecision(wenCanDraw, 2);
 
+        //can free sdusd
         let availSdsCanfree, hasDrawSds, availSdsCanfreeShow;
         hasDrawSds = formatPrecision(
           printNumber(
@@ -277,7 +286,7 @@
               .divide(bigmath.bignumber(100))
               .divide(bigmath.bignumber(sneo_price))
               .done()
-          ), 0
+          )
         );
 
         availSdsCanfree = formatPrecision(
@@ -292,6 +301,57 @@
         availSdsCanfreeShow = formatPrecision(availSdsCanfree, 2);
 
 
+        //default extractable and mortgageable
+        let initAllSdusd, initWenCanDraw;
+        let initRate = liquidate_line_rate_c + 50;
+
+        initAllSdusd = formatPrecision(
+          printNumber(
+            bigmath.chain(bigmath.bignumber(sarLocked))
+              .multiply(bigmath.bignumber(sneo_price))
+              .divide(bigmath.bignumber(initRate))
+              .multiply(bigmath.bignumber(100))
+              .divide(bigmath.bignumber(bigmath.pow(10, 8)))
+              .done()
+          )
+        );
+
+        initWenCanDraw = formatPrecision(
+          printNumber(
+            bigmath.chain(bigmath.bignumber(initAllSdusd))
+              .subtract(bigmath.bignumber(sarHasDrawed))
+              .divide(bigmath.bignumber(bigmath.pow(10, 8)))
+              .done()
+          )
+        );
+
+
+        let initAvailSdsCanfree, initHasDrawSds;
+        initHasDrawSds = formatPrecision(
+          printNumber(
+            bigmath.chain(bigmath.bignumber(sarHasDrawed))
+              .multiply(bigmath.bignumber(bigmath.pow(10, 8)))
+              .multiply(bigmath.bignumber(initRate))
+              .divide(bigmath.bignumber(100))
+              .divide(bigmath.bignumber(sneo_price))
+              .done()
+          )
+        );
+
+        initAvailSdsCanfree = formatPrecision(
+          printNumber(
+            bigmath.chain(bigmath.bignumber(sarLocked))
+              .subtract(bigmath.bignumber(initHasDrawSds))
+              .divide(bigmath.bignumber(bigmath.pow(10, 8)))
+              .done()
+          )
+        );
+
+
+        //end
+
+
+        //current rate
         let ratioAvail, ratioAvailShow;
         if (sarHasDrawed) {
           ratioAvail = printNumber(
@@ -301,11 +361,12 @@
               .divide(bigmath.bignumber(bigmath.pow(10, 8)))
               .done()
           );
-          ratioAvailShow = formatPrecision(ratioAvail * 100, 2) + "%"; //截取2位小数
+          ratioAvailShow = formatPrecision(ratioAvail * 100, 2) + "%";
         } else {
           ratioAvailShow = '--'
         }
 
+        //liquidation price
         let liquidationPrice, liquidationPriceShow;
         if (sarLocked) {
           liquidationPrice = formatPrecision(
@@ -322,12 +383,13 @@
           liquidationPriceShow = '--';
         }
 
+        //status
         let status;
         let rate_c = liquidate_line_rate_c / 100;
-        if (ratioAvail > rate_c + 0.5) {
+        if (ratioAvail >= rate_c + 0.5) {
           status = '1';
         }
-        if (ratioAvail >= rate_c && ratioAvail <= rate_c + 0.5) {
+        if (ratioAvail >= rate_c && ratioAvail < rate_c + 0.5) {
           status = '2';
         }
         if (ratioAvail < rate_c) {
@@ -357,10 +419,13 @@
           availSdsCanfreeShow,
           liquidationPriceShow,
           ratioAvailShow,
+          initAvailSdsCanfree,
+          initWenCanDraw
         };
         return Object.assign(sarBasicInfo, tempObj);
       },
 
+      //has bond authority
       async getBondAuthority() {
         if (!this.currentUser) {
           return;
@@ -374,6 +439,24 @@
         }
         let hasBond = _r.result[0].storagevalue;
         this.hasBond = hasBond ? true : false;
+      },
+
+      //transfer contract
+      async handleTransferContract() {
+        let {wif, address} = this.currentUser;
+        let scAddr = this.sarAddr.sarC.hash;
+        let type = 'migrateSAR4C';
+        let params = [
+          "(addr)" + address,
+        ];
+
+        let r = await eNeo.callC(wif, scAddr, type, params);
+
+        sendDrawTransaction([r.rawData]).then(draw => {
+          this.checkTxid(r, draw);
+        }).catch(() => {
+
+        });
       }
     }
   }

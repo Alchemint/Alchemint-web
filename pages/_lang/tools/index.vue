@@ -29,7 +29,7 @@
       ])
     },
     components: {
-      technicalParams,
+      technicalParams
     },
     mixins: [getSarAddr],
     async mounted() {

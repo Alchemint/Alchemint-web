@@ -9,7 +9,7 @@ export default {
       let params = [
         {
           name: 'neo_price',
-          param: ['(str)neo_price'],
+          param: ['(str)sneo_price'],
           method: 'getTypeB',
         },
         {
@@ -109,7 +109,6 @@ export default {
           tempObj[item.name] = eNeo.hex2Integer(sarConfig[i].value);
         }
       }
-
       return tempObj;
     }
   }

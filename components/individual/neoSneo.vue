@@ -66,9 +66,18 @@
           </el-form-item>
         </div>
       </el-form>
+      <div class="align-center" v-if="hasErrTransfer">
+        <span class="red">{{$t('individual.neoToSneo.transferAgain')}}&nbsp;&nbsp;</span>
+        <el-button type="primary"
+                   size="small"
+                   class="small-btn"
+                   @click.native="transferAgainModal=true"
+                   plain>{{$t('individual.neoToSneo.transferAgainBtn')}}
+        </el-button>
+      </div>
     </div>
 
-    <!--tooltip dialog-->
+    <!--warn info dialog-->
     <div class="modal-mask" v-if="show">
       <div class="modal">
         <div class="modal-content">
@@ -81,13 +90,52 @@
         </div>
       </div>
     </div>
+
+    <!--transfer again dialog-->
+    <el-dialog class="sar-modal"
+               :title="$t('individual.neoToSneo.transferAgainBtn')"
+               label-position="top"
+               center
+               :show-close="false"
+               :close-on-click-modal="false"
+               :close-on-press-escape="false"
+               :visible.sync="transferAgainModal">
+      <div class="transfer-modal-content">
+        <el-table :data="transferErrData" style="width: 100%" :show-header="false">
+          <el-table-column prop="value" min-width="100"></el-table-column>
+          <el-table-column width="120">
+            <template slot-scope="scope">
+              SNEO -> NEO
+            </template>
+          </el-table-column>
+          <el-table-column width="80" align="right">
+            <template slot-scope="scope">
+              <el-button size="small"
+                         class="small-btn"
+                         type="primary"
+                         :loading="loading"
+                         @click.native="transferAgain(scope.row)"
+                         plain>转化
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      <div slot="footer">
+        <el-button class="full-btn"
+                   plain
+                   type="primary"
+                   @click.native="transferAgainModal=false">稍后处理
+        </el-button>
+      </div>
+    </el-dialog>
   </el-card>
 </template>
 
 <script>
-  import {invokeScript} from '../../api/global'
   import sarAddr from '../../mixins/getSarAddr'
-  import {sendDrawTransaction, getUtxo, getStorage, getContractState} from '../../api/global'
+  import {sendDrawTransaction, getUtxo, getContractState, invokeScript} from '../../api/global'
+  import {getSarCByAddr} from '../../api/individual'
   import checkTxid from '../../mixins/checkTxid'
   import {find} from 'lodash'
 
@@ -105,12 +153,15 @@
         neo2sneoVal: 0,
         sneo2neoVal: 0,
         show: false,
+        hasErrTransfer: false,
+        transferAgainModal: false,
+        transferErrData: null,
+        loading: false,
       }
     },
     computed: {
       neoToSneoBtn: {
         get() {
-          //amount need >0
           if (this.neo2sneoVal <= 0) {
             return true;
           }
@@ -130,7 +181,6 @@
       },
       sneoToNeoBtn: {
         get() {
-          //amount need >0
           if (this.sneo2neoVal <= 0) {
             return true;
           }
@@ -150,6 +200,9 @@
       },
     },
     mixins: [sarAddr, checkTxid],
+    mounted() {
+      //this.getTransferErrData();
+    },
     methods: {
       getAllNeo() {
         if (!this.assets) {
@@ -200,7 +253,6 @@
         }
       },
       async neoToSneoConfirm() {
-        // neo transfer sneo
         const loading = this.$loading({
           lock: true,
           text: '',
@@ -227,10 +279,8 @@
           method: "mintTokens",
           params: ["(str)neo"]
         };
-
         let r = await eNeo.callC2(wif, globalCoinParams, callParams);
         let draw = await sendDrawTransaction([r.rawData]);
-
         this.checkTxid(r, draw, () => {
           loading.close();
           location.reload();
@@ -243,6 +293,7 @@
         this.show = true;
 
         let me = this;
+        //the amount to be transferred from sneo to Neo
         let amount = parseInt(this.sneo2neoVal);
         let scHash = this.sarAddr.sneo.hash;
         let scHash2 = scHash.hexToBytes().reverse();
@@ -260,20 +311,24 @@
           this.show = false;
           return;
         }
+        //encapsulation of transaction information
         let tran = new ThinNeo.Transaction();
         tran.type = ThinNeo.TransactionType.ContractTransaction;
         tran.version = 0; //0 or 1
 
+        //input and output encapsulating utxo
         tran.inputs = [];
         tran.outputs = [];
         let utxos = [];
 
+        //preprocess utxos to remove unqualified utxo (marked)
         for (let i = 0; i < utxosRaw.length; i++) {
           let item = utxosRaw[i];
           if (item.n > 0) {
             utxos.push(item);
             continue;
           }
+          //determine whether this utxo is marked
           let params = [
             {
               param: ["(hex)" + item.txid],
@@ -287,6 +342,7 @@
           if (item.asset === assertId) utxos.push(item);
         }
 
+        //encapsulation input
         let count = Neo.Fixed8.Zero;
         let sendcount = Neo.Fixed8.parse(amount.toString());
         for (let i = 0; i < utxos.length; i++) {
@@ -300,15 +356,16 @@
           if (count.compareTo(sendcount) >= 0) break;
         }
         if (count.compareTo(sendcount) < 0) {
+          this.$message.error("utxo input error")
           return false;
         }
-
+        //output
         let output = new ThinNeo.TransactionOutput();
         output.assetId = assertIdBytes;
         output.value = sendcount;
         output.toAddress = scHash2;
         tran.outputs.push(output);
-
+        //odd change
         let change = count.subtract(sendcount);
         if (change.compareTo(Neo.Fixed8.Zero) > 0) {
           let outputChange = new ThinNeo.TransactionOutput();
@@ -317,7 +374,7 @@
           outputChange.toAddress = scHash2;
           tran.outputs.push(outputChange);
         }
-
+        //encapsulation invocation contract parameters
         tran.type = ThinNeo.TransactionType.InvocationTransaction;
         tran.extdata = new ThinNeo.InvokeTransData();
         let sb = new ThinNeo.ScriptBuilder();
@@ -325,33 +382,38 @@
         sb.EmitPushString("refund");
         sb.EmitAppCall(scHash2);
         (tran.extdata).script = sb.ToArray();
+        //(tran.extdata).gas = Neo.Fixed8.fromNumber(1.0);
 
         tran.attributes = [];
         tran.attributes[0] = new ThinNeo.Attribute();
         tran.attributes[0].usage = ThinNeo.TransactionAttributeUsage.Script;
         tran.attributes[0].data = addressHash;
 
+        //Signing Intelligent Contracts
         let sb2 = new ThinNeo.ScriptBuilder();
         sb2.EmitPushString("whatever");
-        let randomNum = new Neo.BigInteger(250);
+        let randomNum = new Neo.BigInteger(250)
+        //let randomNum = new Neo.BigInteger(Math.floor(Math.random() * 10000))
         sb2.EmitPushNumber(randomNum);
         let r1 = await getContractState([scHash]);
         let scHashCode = r1.result[0].script;
         let scHashCodeBytes = scHashCode.hexToBytes();
         tran.AddWitnessScript(scHashCodeBytes, sb2.ToArray());
 
+        //Sign as sponsor
         let msg = tran.GetMessage();
         let signdata = ThinNeo.Helper.Sign(msg, prikey);
         tran.AddWitness(signdata, pubkey, address);
         let txid = "0x" + tran.GetHash().clone().reverse().toHexString();
         let rawData = tran.GetRawData().toHexString();
         let r = await sendDrawTransaction([rawData]);
-        this.checkTxid({txid: txid}, {result: r.result[0]}, () => {
+        this.checkTxid({txid: txid, rawData: rawData}, r, () => {
           me.refund2(txid);
         })
       },
       async refund2(refundTxid) {
         let scHash = this.sarAddr.sneo.hash;
+        // let scHash2 = scHash.hexToBytes().reverse();
         let scAddr = ThinNeo.Helper.GetAddressFromScriptHash(eNeo.endianChange(scHash).hexToBytes());
         let {wif} = this.currentUser;
         let prikey = ThinNeo.Helper.GetPrivateKeyFromWIF(wif);
@@ -371,46 +433,76 @@
         }
 
         if (!utxo) {
+          this.$message.error("no utxo, refund 2nd faild");
           return;
         }
 
+        //encapsulation of transaction information
         let tran = new ThinNeo.Transaction();
         tran.type = ThinNeo.TransactionType.ContractTransaction;
         tran.version = 0; //0 or 1
         tran.attributes = [];
 
+        //input and output encapsulating utxo
         tran.inputs = [];
         tran.outputs = [];
 
+        //encapsulation input
         let input = new ThinNeo.TransactionInput();
         input.hash = utxo.txid.hexToBytes().reverse();
         input.index = utxo.n;
         input["_addr"] = utxo.addr;
         tran.inputs.push(input);
 
+        //output
         let output = new ThinNeo.TransactionOutput();
         output.assetId = assertIdBytes;
         output.value = Neo.Fixed8.parse(utxo.value.toString());
         output.toAddress = addressHash;
         tran.outputs.push(output);
 
+        //Signing Intelligent Contracts
         let sb3 = new ThinNeo.ScriptBuilder();
+        //let randomNum = new Neo.BigInteger(new Date().getTime());
         let randomNum = new Neo.BigInteger(0)
         sb3.EmitPushNumber(randomNum);
         sb3.EmitPushNumber(randomNum);
+        //sb3.Emit(ThinNeo.OpCode.DROP);
         let r1 = await getContractState([scHash]);
         let scHashCode = r1.result[0].script;
         let scHashCodeBytes = scHashCode.hexToBytes();
         tran.AddWitnessScript(scHashCodeBytes, sb3.ToArray());
 
+        //Sign as sponsor
+        //let msg = tran.GetMessage();
+        //let signdata = ThinNeo.Helper.Sign(msg, prikey);
+        //tran.AddWitness(signdata, pubkey, address);
         let txid = "0x" + tran.GetHash().clone().reverse().toHexString();
         let rawData = tran.GetRawData().toHexString();
-
         let r = await sendDrawTransaction([rawData]);
-        this.checkTxid({txid: txid}, {result: r.result[0]}, () => {
+        this.checkTxid({txid: txid, rawData: rawData}, r, () => {
           this.show = false;
           location.reload();
         })
+      },
+
+      //convert failure
+      getTransferErrData() {
+        let params = [this.currentUser.address, 100, 1];
+        getSarCByAddr(params).then(res => {
+          let tempArr = res.result;
+          if (!tempArr) {
+            return;
+          }
+          this.hasErrTransfer = true;
+          this.transferErrData = tempArr;
+        }).catch(err => {
+          console.log(err);
+        })
+      },
+
+      async transferAgain(item) {
+        this.refund2(item.txid);
       }
     }
   }
@@ -420,7 +512,7 @@
   @import "../../assets/styles/var";
 
   .neo-sneo {
-    padding: 50px 0 0 10px;
+    padding: 50px 10px 0;
     height: 240px;
     &-title {
       margin-bottom: 26px;
@@ -431,9 +523,6 @@
       }
     }
     &-form {
-      &__item {
-        margin-bottom: 16px;
-      }
       .el-icon-caret-right {
         display: inline-block;
         margin-left: 10px;
@@ -482,6 +571,14 @@
           line-height: 20px;
         }
       }
+    }
+  }
+
+  .transfer-modal-content {
+    padding-top: 30px;
+    &__item {
+      line-height: 24px;
+      border-bottom: 1px solid $--border-color-base;
     }
   }
 </style>

@@ -1,5 +1,11 @@
 import math from 'mathjs'
 
+/**
+ * time formatting
+ * @param  {Number}  timestamp
+ * @param  {Boolean} isFullTime
+ * @return {String}
+ */
 const formatTime = function (timestamp = new Date(), isFullTime) {
   let t = new Date(+timestamp);
 
@@ -23,7 +29,6 @@ const bigmath = math.create({
   precision: 32      // 64 by default, only applicable for BigNumbers
 });
 
-
 function printNumber(value, precision = 10) {
   return bigmath.format(
     Number(value),
@@ -42,7 +47,7 @@ function formatPrecision(value, precision = 8) {
   let index = val.indexOf('.');
   let result;
   if (index > -1) {
-    result = val.substring(0, val.indexOf('.') + precision + 1); //直接截取precision位小数
+    result = val.substring(0, val.indexOf('.') + precision + 1);
   } else {
     result = val;
   }

@@ -19,7 +19,7 @@
                     @blur="validateName">
             <icon-font slot="prefix" name="icon-yuechi" class="prefix-icon"></icon-font>
           </el-input>
-          <!--错误信息提示-->
+          <!--register err info-->
           <div class="login-err-container">
             <div class="login-err" v-if="nameErr">
               <i class="el-icon-warning red"></i>
@@ -36,7 +36,7 @@
                     v-model="formData.pwd">
             <icon-font slot="prefix" name="icon-suo" class="prefix-icon"></icon-font>
           </el-input>
-          <!--错误信息提示-->
+          <!--register err info-->
           <div class="login-err-container">
             <div class="login-err" v-if="pwdErr">
               <i class="el-icon-warning red"></i>
@@ -53,7 +53,7 @@
                     v-model="formData.confirmPwd">
             <icon-font slot="prefix" name="icon-suo" class="prefix-icon"></icon-font>
           </el-input>
-          <!--错误信息提示-->
+          <!--register err info-->
           <div class="login-err-container">
             <div class="login-err" v-if="confirmPwdErr">
               <i class="el-icon-warning red"></i>
@@ -123,7 +123,8 @@
     },
     mixins: [handleEnter],
     mounted() {
-      // Collect mouse events
+      //The principle of the random number generator is to collect mouse events,
+      //so the effect is good if you dot early.
       Neo.Cryptography.RandomNumberGenerator.startCollectors();
     },
     methods: {
@@ -180,10 +181,12 @@
         this.$router.push({path: path});
       },
       async handleDownLoad() {
+        //download json file
         let user = await getCurrentUser(this);
+        //computing wallet JSON file
         let jsonStr = await getJsonFromWif(this.formData.name, user.wif, this.formData.pwd);
-
-        let tips = this.$t("tips.IeCannotDown");
+        //trigger JSON Download
+        let tips = this.$i18n.locale === 'zh' ? '浏览器不支持下载文件，请更换浏览器重试！' : 'This browser does not support downloading this file. Please change your browser and try again!';
         downFile(user.address + ".json", ThinNeo.Helper.String2Bytes(jsonStr), tips);
 
         let path = this.$i18n.path('wallet');

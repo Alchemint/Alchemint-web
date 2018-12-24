@@ -5,7 +5,7 @@
         <div class="technical-panel__content">
           <div class="technical-panel__title">{{$t('tools.contractAddr.blockHeight')}}</div>
           <div class="technical-panel__info">
-            <count-to :startVal="0" :endVal="blockHeight" :duration="3000"></count-to>
+            <span>{{blockHeight}}</span>
           </div>
         </div>
       </div>
@@ -86,7 +86,6 @@
 <script>
   import {getBlockCount} from '../../api/global'
   import getSarAddr from '../../mixins/getSarAddr'
-  import countTo from 'vue-count-to'
   import {getStorage} from '../../api/global'
   import {forEach} from 'lodash'
 
@@ -152,9 +151,6 @@
           }
         ]
       }
-    },
-    components: {
-      countTo,
     },
     mixins: [getSarAddr],
     mounted() {

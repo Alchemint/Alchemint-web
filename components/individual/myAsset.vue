@@ -44,7 +44,7 @@
 
 <script>
   import {orderBy, forEach} from 'lodash';
-  import {numFormat} from "~/filters";
+  import {numFormat} from "../../filters";
 
   export default {
     name: 'MyAsset',

@@ -3,13 +3,16 @@
     <div slot="header" class="border-card-header">
       <span class="border-card-header__title">{{$t('individual.mySar.title')}}</span>
     </div>
+    <!--create sar-->
     <div class="align-center" v-if="!mySar">
       <el-button class="create-btn"
                  type="primary"
                  :disabled="createBtn"
-                 @click="handleCreateSar">{{$t('individual.mySar.createSar')}}
+                 @click="createSar">{{$t('individual.mySar.createSar')}}
       </el-button>
     </div>
+
+    <!--my sar info-->
     <div v-else class="sar-detail clearfix">
       <div class="sar-detail-info">
         <div class="sar-detail-item">
@@ -46,15 +49,7 @@
             {{mySar.status | filterMethod($t('sarCStatus'))}}
           </div>
           <div class="sar-detail-item__title">{{$t('individual.mySar.status')}}
-            <el-tooltip popper-class="global-popper"
-                        placement="bottom-start"
-                        offset="100"
-                        effect="light">
-              <div slot="content">
-                <ul class="tooltip-ul" v-html="$t('individual.statusInfo')"></ul>
-              </div>
-              <icon-font name="icon-wenhao" class="green"></icon-font>
-            </el-tooltip>
+            <status-tooltip :sar-config="sarConfig"></status-tooltip>
           </div>
         </div>
         <div class="sar-detail-item no-border-bottom">
@@ -79,13 +74,13 @@
           <el-button type="primary"
                      plain
                      :disabled="reserveBtn"
-                     @click="opSarShow('reserve')">
+                     @click="opOperationModal('reserve')">
             {{$t('individual.mySar.increase')}}
           </el-button>
           <el-button type="primary"
                      plain
                      :disabled="withdrawBtn"
-                     @click="opSarShow('withdraw')">
+                     @click="opOperationModal('withdraw')">
             {{$t('individual.mySar.draw')}}
           </el-button>
         </div>
@@ -93,13 +88,13 @@
           <el-button type="primary"
                      plain
                      :disabled="expandeBtn"
-                     @click="opSarShow('expande')">
+                     @click="opOperationModal('expande')">
             {{$t('individual.mySar.issue')}}
           </el-button>
           <el-button type="primary"
                      plain
                      :disabled="contractBtn"
-                     @click="opSarShow('contract')">
+                     @click="opOperationModal('contract')">
             {{$t('individual.mySar.return')}}
           </el-button>
           <el-tooltip popper-class="global-popper"
@@ -115,13 +110,13 @@
           <el-button type="primary"
                      plain
                      :disabled="rechargeBtn"
-                     @click="opSarShow('recharge')">
+                     @click="opOperationModal('recharge')">
             {{$t('individual.mySar.recharge')}}
           </el-button>
           <el-button type="primary"
                      plain
                      :disabled="claimFeeBtn"
-                     @click="opSarShow('claimFee')">
+                     @click="opOperationModal('claimFee')">
             {{$t('individual.mySar.refund')}}
           </el-button>
         </div>
@@ -133,13 +128,13 @@
           <el-button type="primary"
                      plain
                      :disabled="closeBtn"
-                     @click="recoverModal=true">{{$t('individual.mySar.closeSar')}}
+                     @click="closeModal=true">{{$t('individual.mySar.closeSar')}}
           </el-button>
         </div>
       </div>
     </div>
 
-    <!--sar operation  dialog-->
+    <!--operation sar dialog-->
     <el-dialog class="sar-modal"
                :title="operationModal.title"
                label-position="top"
@@ -164,24 +159,18 @@
                    :max="operationModal.max"></el-slider>
       </el-form>
       <div v-if="operationModal.type!=='recharge' && operationModal.type!=='claimFee'">
-        <div class="resuce-info mt-20 clearfix" v-if="operationModal.type==='contract'">
+        <div class="liquidation-info mt-20 clearfix" v-if="operationModal.type==='contract'">
           <span class="fl">{{$t('individual.mySar.fee')}}</span>
           <span class="fr">{{operationModal.needFee}} SDS</span>
         </div>
         <div class="sds-fee-info" v-if="confirmBtn">{{$t('individual.mySar.insufficientFee')}}</div>
-        <div class="resuce-info mt-20 clearfix">
+        <div class="liquidation-info mt-20 clearfix">
           <span class="fl">{{$t('individual.mySar.afterMortgageRate')}}</span>
           <span class="fr">{{operationModal.rateShow}}</span>
         </div>
-        <div class="resuce-info mt-20 clearfix">
+        <div class="liquidation-info mt-20 clearfix">
           <span class="fl">{{$t('individual.mySar.afterStatus')}}
-             <el-tooltip popper-class="global-popper"
-                         placement="bottom-start"
-                         offset="100"
-                         effect="light">
-              <div slot="content" class="tooltip-ul" v-html="$t('individual.statusInfo')"></div>
-              <icon-font name="icon-wenhao" class="green"></icon-font>
-            </el-tooltip>
+             <status-tooltip :sar-config="sarConfig"></status-tooltip>
           </span>
           <span :class="['fr',{'green':operationModal.status==='0',
                                'blue':operationModal.status==='1',
@@ -189,6 +178,15 @@
                                'red':operationModal.status==='3'}]">
             {{operationModal.status | filterMethod($t('sarCStatus'))}}
           </span>
+        </div>
+        <div class="warn-info"
+             v-if="operationModal.rate < sarConfig.liquidate_line_rate_c + 50
+               && operationModal.status!=='0'">
+          <i class="el-icon-warning"></i>
+          <span>&nbsp;
+            {{$t('individual.mySar.liquidationRiskInfo',{
+               topRate:sarConfig.liquidate_line_rate_c + 50
+            })}}</span>
         </div>
       </div>
       <div slot="footer">
@@ -198,7 +196,7 @@
         <el-button class="sar-modal-btn"
                    type="primary"
                    :disabled="confirmBtn"
-                   @click="opSar">{{$t('global.confirmBtn')}}
+                   @click="opRiskModal">{{$t('global.confirmBtn')}}
         </el-button>
       </div>
     </el-dialog>
@@ -211,21 +209,21 @@
                :show-close="false"
                :close-on-click-modal="false"
                :close-on-press-escape="false"
-               :visible.sync="recoverModal">
+               :visible.sync="closeModal">
       <div class="close-sar-info align-center">{{$t('individual.mySar.closeSarInfo')}}</div>
       <div class="align-center mt-40">{{$t('individual.mySar.closeSarSure')}}</div>
       <div slot="footer">
         <el-button class="sar-modal-btn"
-                   @click="recoverModal=false">{{$t('global.cancelBtn')}}
+                   @click="closeModal=false">{{$t('global.cancelBtn')}}
         </el-button>
         <el-button class="sar-modal-btn" type="primary"
-                   @click="recoverySar">{{$t('global.confirmBtn')}}
+                   @click="closeSar">{{$t('global.confirmBtn')}}
         </el-button>
       </div>
     </el-dialog>
 
     <!--history dialog-->
-    <el-dialog class="sar-modal history-modal no-header-modal"
+    <el-dialog class="sar-modal no-header-modal"
                :title="$t('global.history.sarOperationHistory')"
                width="1000px"
                label-position="top"
@@ -239,11 +237,47 @@
           <history-detail v-if="historyList"
                           :data="historyListShow"></history-detail>
         </el-tab-pane>
-        <el-tab-pane :label="$t('global.history.liquidatioOperationHistory')" name="resuce">
+        <el-tab-pane :label="$t('global.history.liquidatioOperationHistory')" name="liquidation">
           <history-detail v-if="historyList"
                           :data="historyListShow"></history-detail>
         </el-tab-pane>
       </el-tabs>
+    </el-dialog>
+
+    <!--risk warning dialog-->
+    <el-dialog class="sar-modal risk-modal"
+               :title="$t('individual.mySar.riskModal.title')"
+               label-position="top"
+               center
+               :show-close="false"
+               :close-on-click-modal="false"
+               :close-on-press-escape="false"
+               :visible.sync="riskModal">
+      <div class="risk-modal-content">
+        <div class="risk-modal-content__title">
+          {{$t('individual.mySar.riskModal.infoTitle',{
+          topRate:sarConfig.liquidate_line_rate_c + 50
+          })}}
+        </div>
+        <ul class="risk-modal-content__detail"
+            v-html="$t('individual.mySar.riskModal.infoDetail',{
+            lineRate:sarConfig.liquidate_line_rate_c
+            })"></ul>
+      </div>
+      <div class="risk-modal-footer">
+        <el-button type="primary"
+                   plain
+                   class="full-btn"
+                   @click="riskModal=false">{{$t('individual.mySar.riskModal.cancelBtn')}}
+        </el-button>
+        <div class="mt-10">
+          <el-button type="primary"
+                     plain
+                     class="full-btn"
+                     @click="operationSar">{{$t('individual.mySar.riskModal.confirmBtn')}}
+          </el-button>
+        </div>
+      </div>
     </el-dialog>
   </el-card>
 </template>
@@ -257,6 +291,7 @@
   import {bigmath, formatPrecision, printNumber} from '../../utils'
   import {getSarCHistory} from '../../api/individual'
   import historyDetail from '../public/historyDetail'
+  import statusTooltip from './statusTooltip'
 
   export default {
     name: 'MySar',
@@ -288,10 +323,6 @@
           rateShow: '',
           needFee: '',
         },
-        recoverModal: false,
-        historyModal: false,
-        historyList: null,
-        historyListShow: null,
         createBtn: true,
         reserveBtn: true,
         withdrawBtn: true,
@@ -300,14 +331,20 @@
         rechargeBtn: true,
         claimFeeBtn: true,
         closeBtn: true,
-        activeTab: 'sar',
         disabled: false,
         confirmBtn: false,
+        closeModal: false,
+        historyModal: false,
+        historyList: null,
+        historyListShow: null,
+        activeTab: 'sar',
+        riskModal: false,
       }
     },
     mixins: [sarAddr, checkTxid],
     components: {
       historyDetail,
+      statusTooltip
     },
     async mounted() {
       let mySar = await this.$parent.getSarInfo(this.sarConfig, this.currentUser.address);
@@ -316,21 +353,18 @@
         this.mySar = mySar;
         this.$parent.hasMySar = true;
 
-        //add sneo button status
+        //add sneo btn
         let sneoMax = find(this.assets, o => o.symbol === 'SNEO');
         if (sneoMax) {
           this.reserveBtn = Number(sneoMax.balance) <= 0 ? true : false;
         } else {
           this.reserveBtn = true;
         }
-
-        //draw sneo button status
+        //draw sneo btn
         this.withdrawBtn = Number(mySar.availSdsCanfree) <= 0 ? true : false;
-
-        //issue sdusd button status
+        //issue sdusd btn
         this.expandeBtn = Number(mySar.wenCanDraw) <= 0 ? true : false;
-
-        //return sdusd button status
+        //return sdusd btn
         let tempObj = find(this.assets, o => o.symbol === 'SDUSD');
         let num = tempObj ? tempObj.balance : 0;
         let contractNum;
@@ -344,19 +378,17 @@
         } else {
           this.contractBtn = true;
         }
-
-        //add sds button status
+        //add sds btn
         let sdsVal = find(this.assets, o => o.symbol === 'SDS');
         if (sdsVal) {
           this.rechargeBtn = Number(sdsVal.balance) <= 0 ? true : false;
         } else {
           this.rechargeBtn = true;
         }
-
-        //draw sds button status
+        //draw sds btn
         this.claimFeeBtn = Number(mySar.sdsFee) <= 0 ? true : false;
 
-        //close sar button status
+        //close sar btn
         if (Number(mySar.sarHasDrawed) === 0
           && Number(mySar.sarLocked) === 0
           && Number(mySar.sdsFee) === 0
@@ -367,72 +399,13 @@
           this.closeBtn = true;
         }
 
-        //need sds pay
-        this.needFee = await this.getSDSFee(mySar.sarHasDrawed);
+        //fee to be paid (sds)
+        this.needFee = await this.getNeedSdsFee(mySar.sarHasDrawed);
       }
     },
     methods: {
-      //get block height
-      async getCurrentBlockHeight() {
-        let _currentHeight = await getBlockCount([]);
-        let currentHeight = _currentHeight.result;
-        let blockHeight;
-        if (currentHeight) {
-          blockHeight = currentHeight[0].blockcount;
-        }
-        return blockHeight;
-      },
-
-      //need sds pay
-      async getSDSFee(mount) {
-        let blockHeight = await this.getCurrentBlockHeight();
-        blockHeight = +blockHeight;
-        let currFee = formatPrecision(
-          printNumber(
-            bigmath.chain(bigmath.bignumber(blockHeight))
-              .subtract(bigmath.bignumber(this.mySar.lastHeight))
-              .multiply(bigmath.bignumber(this.mySar.sarHasDrawed))
-              .multiply(bigmath.bignumber(this.sarConfig.fee_rate_c))
-              .divide(bigmath.bignumber(bigmath.pow(10, 16)))
-              .done()
-          )
-        );
-        currFee = +currFee;
-
-        let needUSDFee;
-        if (Number(mount === 0)) {
-          needUSDFee = formatPrecision(
-            printNumber(
-              bigmath.chain(bigmath.bignumber(currFee))
-                .add(bigmath.bignumber(this.mySar.fee))
-                .done()
-            )
-          );
-        } else {
-          needUSDFee = formatPrecision(
-            printNumber(
-              bigmath.chain(bigmath.bignumber(currFee))
-                .add(bigmath.bignumber(this.mySar.fee))
-                .multiply(bigmath.bignumber(mount))
-                .divide(bigmath.bignumber(this.mySar.sarHasDrawed))
-                .done()
-            )
-          );
-        }
-
-        needUSDFee = +needUSDFee;
-        let needFee = formatPrecision(
-          printNumber(
-            bigmath.chain(bigmath.bignumber(needUSDFee))
-              .divide(bigmath.bignumber(this.sarConfig.sds_price))
-              .done()
-          )
-        );
-        return needFee;
-      },
-
       //create sar
-      async handleCreateSar() {
+      async createSar() {
         if (this.disabled) {
           return;
         }
@@ -466,8 +439,65 @@
         });
       },
 
-      //pop sar dialog
-      opSarShow(type) {
+      //sar info
+      async getCurrentBlockHeight() {
+        let _currentHeight = await getBlockCount([]);
+        let currentHeight = _currentHeight.result;
+        let blockHeight;
+        if (currentHeight) {
+          blockHeight = currentHeight[0].blockcount;
+        }
+        return blockHeight;
+      },
+      async getNeedSdsFee(mount) {
+        //currFee = (blockHeight - lastHeight) * hasDrawed * fee_rate / SIXTEEN_POWER;
+        //SIXTEEN_POWER = 10^16
+        let blockHeight = await this.getCurrentBlockHeight();
+        blockHeight = +blockHeight;
+        let currFee = formatPrecision(
+          printNumber(
+            bigmath.chain(bigmath.bignumber(blockHeight))
+              .subtract(bigmath.bignumber(this.mySar.lastHeight))
+              .multiply(bigmath.bignumber(this.mySar.sarHasDrawed))
+              .multiply(bigmath.bignumber(this.sarConfig.fee_rate_c))
+              .divide(bigmath.bignumber(bigmath.pow(10, 16)))
+              .done()
+          )
+        );
+        currFee = +currFee;
+
+        //needUSDFee = (currFee + fee) * mount / hasDrawed;
+        let needUSDFee;
+        if (Number(mount === 0)) {
+          needUSDFee = 0;
+        } else {
+          needUSDFee = formatPrecision(
+            printNumber(
+              bigmath.chain(bigmath.bignumber(currFee))
+                .add(bigmath.bignumber(this.mySar.fee))
+                .multiply(bigmath.bignumber(mount))
+                .divide(bigmath.bignumber(this.mySar.sarHasDrawed))
+                .done()
+            )
+          );
+        }
+
+        needUSDFee = +needUSDFee;
+
+        //needFee = needUSDFee * EIGHT_POWER / sdsPrice;
+        //EIGHT_POWER=10^8
+        let needFee = formatPrecision(
+          printNumber(
+            bigmath.chain(bigmath.bignumber(needUSDFee))
+              .divide(bigmath.bignumber(this.sarConfig.sds_price))
+              .done()
+          )
+        );
+        return needFee;
+      },
+
+      //operation sar
+      opOperationModal(type) {
         this.operationModal.show = true;
         this.operationModal.type = type;
 
@@ -475,6 +505,7 @@
 
         let mySar = this.mySar;
         let opSarMax = 0;
+        let amount = 0;
 
         //add sneo
         if (type === "reserve") {
@@ -486,8 +517,8 @@
           if (sneoMax) {
             opSarMax = sneoMax.balance;
           }
+          amount = opSarMax;
         }
-
         //draw sneo
         if (type === "withdraw") {
           this.operationModal.title = locale === 'en' ? 'Draw Collateral' : '提取抵押物';
@@ -495,8 +526,8 @@
             'Input collateral amount to be drawn' : '请输入提取抵押物的数量';
           this.operationModal.name = 'SNEO';
           opSarMax = mySar.availSdsCanfree > 0 ? mySar.availSdsCanfree : 0;
+          amount = mySar.initAvailSdsCanfree > 0 ? mySar.initAvailSdsCanfree : 0;
         }
-
         //issue sdusd
         if (type === "expande") {
           this.operationModal.title = locale === 'en' ? 'Issue Stablecoin' : '发行稳定币';
@@ -504,8 +535,8 @@
             'Input issue amount' : '请输入发行稳定币的数量';
           this.operationModal.name = 'SDUSD';
           opSarMax = mySar.wenCanDraw > 0 ? mySar.wenCanDraw : 0;
+          amount = mySar.initWenCanDraw > 0 ? mySar.initWenCanDraw : 0;
         }
-
         //return sdusd
         if (type === "contract") {
           this.operationModal.name = 'SDUSD';
@@ -528,8 +559,8 @@
           } else {
             opSarMax = sarHasDrawed;
           }
+          amount = opSarMax;
         }
-
         //add sds
         if (type === 'recharge') {
           this.operationModal.title = locale === 'en' ? 'Add SDS (For Deducting Service Fee)' : '充值SDS(用于抵扣手续费)';
@@ -540,8 +571,8 @@
           if (tempObj) {
             opSarMax = tempObj.balance;
           }
+          amount = opSarMax;
         }
-
         //draw sds
         if (type === 'claimFee') {
           this.operationModal.title = locale === 'en' ? 'Draw SDS' : '提取SDS';
@@ -555,17 +586,21 @@
                 .done()
             )
           ) || 0;
+          amount = opSarMax;
         }
 
         opSarMax = +opSarMax;
-        this.operationModal.amount = opSarMax;
+        amount = +amount;
+        this.operationModal.amount = amount;
         this.operationModal.max = opSarMax;
 
+        //get status and rate after mortgage
         this.getAfterMortgageRate();
       },
-
-      //calculate rate and status after input change
       async getAfterMortgageRate() {
+        if (!this.operationModal.amount) {
+          this.operationModal.amount = 0;
+        }
         let type = this.operationModal.type;
         if (type === 'recharge' || type === 'claimFee') {
           this.confirmBtn = false;
@@ -576,6 +611,7 @@
         let {sarLocked, sarHasDrawed} = this.mySar;
         let sneoAmount, sdusdAmount;
 
+        //operationModal.amount
         let mount = formatPrecision(
           printNumber(
             bigmath.chain(bigmath.bignumber(this.operationModal.amount))
@@ -584,7 +620,6 @@
           ), 0
         );
         mount = +mount;
-
         //add sneo
         if (type === 'reserve') {
           sneoAmount = formatPrecision(
@@ -596,7 +631,6 @@
           );
           sdusdAmount = sarHasDrawed;
         }
-
         //draw sneo
         if (type === 'withdraw') {
           sneoAmount = formatPrecision(
@@ -608,7 +642,6 @@
           );
           sdusdAmount = sarHasDrawed;
         }
-
         //issue sdusd
         if (type === 'expande') {
           sdusdAmount = formatPrecision(
@@ -620,7 +653,6 @@
           );
           sneoAmount = sarLocked;
         }
-
         //return sdusd
         if (type === 'contract') {
           sdusdAmount = formatPrecision(
@@ -657,12 +689,12 @@
         this.operationModal.rate = rate;
         this.operationModal.rateShow = rateShow;
 
-        //liquidated status
+        //status
         let status;
-        if (rate > (liquidate_line_rate_c + 50)) {
+        if (rate >= (liquidate_line_rate_c + 50)) {
           status = '1';
         }
-        if (rate >= liquidate_line_rate_c && rate <= (liquidate_line_rate_c + 50)) {
+        if (rate >= liquidate_line_rate_c && rate < (liquidate_line_rate_c + 50)) {
           status = '2';
         }
         if (rate < liquidate_line_rate_c) {
@@ -674,10 +706,10 @@
         }
         this.operationModal.status = status;
 
-        //need sds pay
+        //calculate need sds fee
         if (type === 'contract') {
           let bigAmount = this.operationModal.amount * bigmath.pow(10, 8);
-          let needFee = await this.getSDSFee(bigAmount);
+          let needFee = await this.getNeedSdsFee(bigAmount);
           this.operationModal.needFee = needFee;
           let bigNeedFee = parseInt(needFee * bigmath.pow(10, 8));
           this.confirmBtn = bigNeedFee > this.mySar.sdsFee ? true : false;
@@ -685,12 +717,7 @@
           this.confirmBtn = false;
         }
       },
-
-      //sar operation
-      async opSar() {
-        if (this.operationModal.amount === 0) {
-          return;
-        }
+      async operationSar() {
         if (this.disabled) {
           return;
         }
@@ -728,9 +755,25 @@
           this.disabled = false;
         });
       },
+      async opRiskModal() {
+        if (this.operationModal.amount === 0) {
+          return;
+        }
+
+        let rateC = this.sarConfig.liquidate_line_rate_c + 50;
+        if (this.operationModal.type === 'withdraw' || this.operationModal.type === 'expande') {
+          if (this.operationModal.rate < rateC && this.operationModal.status !== '0') {
+            this.riskModal = true;
+          } else {
+            this.operationSar();
+          }
+        } else {
+          this.operationSar();
+        }
+      },
 
       //close sar
-      async recoverySar() {
+      async closeSar() {
         if (this.disabled) {
           return;
         }
@@ -754,14 +797,14 @@
             location.reload();
           });
         }).catch(() => {
-          this.recoverModal = false;
+          this.closeModal = false;
           this.disabled = false;
         });
       },
 
-      //history detail
+      //get sar history detail
       async getHistoryDetail() {
-        let params = [this.mySar.sarTxid, 10000, 1];
+        let params = [this.mySar.sarTxid, 100, 1];
         let historyList = await getSarCHistory(params);
         this.historyList = historyList.result;
         this.historyListShow = this.historyList;
@@ -772,7 +815,7 @@
         if (this.activeTab === 'sar') {
           this.historyListShow = this.historyList;
         }
-        if (this.activeTab === 'resuce') {
+        if (this.activeTab === 'liquidation') {
           this.historyListShow = filter(this.historyList, o => o.type === 7);
         }
       },
@@ -821,6 +864,13 @@
         text-align: center !important;
         padding: 0 !important;
       }
+      .contract-info {
+        position: absolute;
+        top: 50%;
+        right: -20px;
+        transform: translateY(-50%);
+        cursor: pointer;
+      }
     }
     &-item {
       float: left;
@@ -837,6 +887,7 @@
         margin-top: 36px;
         font-size: 18px;
         font-weight: bold;
+        word-wrap: break-word;
       }
       &__title {
         font-size: 12px;
@@ -846,12 +897,42 @@
     }
   }
 
-  .contract-info {
-    position: absolute;
-    top: 50%;
-    right: -20px;
-    transform: translateY(-50%);
-    cursor: pointer;
+  .sar-modal {
+    .liquidation-info {
+      color: #667;
+      line-height: 30px;
+      border-bottom: 1px solid $--border-color-base;
+    }
+    .close-sar-info {
+      margin-top: 60px;
+      line-height: 32px;
+    }
+    .sds-fee-info {
+      font-size: 12px;
+      color: $--color-danger;
+      margin-top: 6px;
+    }
+    .warn-info {
+      font-size: 12px;
+      color: $--color-danger;
+      margin-top: 6px;
+    }
+  }
+
+  .risk-modal {
+    &-content {
+      padding: 40px 0 80px;
+      line-height: 1.3;
+      &__title {
+        color: #334;
+        font-weight: bold;
+      }
+      &__detail {
+        color: #667;
+        margin-top: 20px;
+        padding-left: 20px;
+      }
+    }
   }
 
   .recover-modal-info {
@@ -859,27 +940,16 @@
     text-align: center;
     line-height: 20px
   }
-
-  .close-sar-info {
-    margin-top: 60px;
-    line-height: 32px;
-  }
-
-  .resuce-info {
-    color: #667;
-    line-height: 30px;
-    border-bottom: 1px solid $--border-color-base;
-  }
-
-  .sds-fee-info {
-    font-size: 12px;
-    color: $--color-danger;
-    margin-top: 6px;
-  }
 </style>
 
 <style lang="scss">
   @import "../../assets/styles/var";
+
+  .no-header-modal {
+    .el-dialog__header {
+      display: none;
+    }
+  }
 
   .content-no-padding {
     .el-card__body {

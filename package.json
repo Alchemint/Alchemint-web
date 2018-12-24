@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "nuxt --port 9275",
     "build": "nuxt build",
-    "buildMain": "cross-env _ENV=mainNet nuxt build",
+    "buildNeo": "cross-env _ENV=neo nuxt build",
     "buildTest": "cross-env _ENV=testNet nuxt build",
     "buildPrivate": "cross-env _ENV=pri nuxt build",
     "start": "nuxt start",

@@ -7,14 +7,16 @@ export default {
     account: 'Account',
     logout: 'Log Out',
     help: 'Help',
-    userManual: 'User Manual',
     termsService: 'Terms of Service',
+    userManual: 'User Manual',
+    video: 'Video Tutorial',
+    contact: 'Contact Us'
   },
   login: {
     json: 'Import Keystore',
     pwd: 'Password',
-    wif: 'Please input your key',
-    loginByKey: 'Log in by key',
+    wif: 'Please input your private key',
+    loginByKey: 'Log in by private key',
     loginByJson: 'Log in by Keystore File',
     jsonErr: 'Keystore or password incorret',
     wifErr: 'Key is incorret, try again'
@@ -28,7 +30,7 @@ export default {
     confirmPwdErr: 'Password do not match',
     succTitle: 'Your Keystore file has been generated. Be sure to download and keep your Keystore file!',
     succInfo: '<li>Once the Keystore file is lost, it cannot be recovered by the platform.</li>\n' +
-      '          <li>You can log in by Keystore file + password or merely by the key.</li>',
+      '          <li>You can log in by Keystore file + password or merely by the private key.</li>',
     downLoadBtn: 'Download Keystore File',
   },
   wallet: {
@@ -53,7 +55,7 @@ export default {
     to: 'To',
     bSystemInfo: 'SAR-B smart contract operation',
     cSystemInfo: 'SAR-C smart contract operation',
-    errAddr: 'incorrect address',
+    errAddr: 'Wrong information',
     category: {
       sarB: 'SAR-B Stablecoin',
       global: 'Global Assets',
@@ -64,12 +66,18 @@ export default {
       sar: 'Tum',
       sds: 'Into',
       info: 'is in your account. Please check'
+    },
+    transferModal: {
+      title: 'Confirm Transfer',
+      amount: 'You are about to send',
+      to: 'To',
+      fee: 'Service fee',
     }
   },
   individual: {
-    statusInfo: '<li>when"0&lt;SAR mortgage rates &lt; 150%", the status of SAR is displayed as "Critical"; </li>' +
-      '<li>when "150%&lt;=SAR mortgage rates &lt;= 200%", SAR status is shown as "Unsafe";</li>' +
-      '<li>when "SAR mortgage rate&gt; 200%, SAR", status is displayed as "Safe".</li>',
+    statusInfo: '<li>when"0&lt;SAR mortgage rates &lt; {lineRate}%", the status of SAR is displayed as "Critical"; </li>' +
+      '<li>when "{lineRate}%&lt;=SAR mortgage rates &lt;{topRate}%", SAR status is shown as "Unsafe";</li>' +
+      '<li>when "SAR mortgage rate&gt;= {topRate}%, SAR", status is displayed as "Safe".</li>',
     relevantAssets: {
       title: 'Relevant Assets',
       type: 'Type',
@@ -81,18 +89,21 @@ export default {
       amountToInput: 'Amount to input',
       amountToGet: 'Amount to get',
       info: '<li>Due to the fact that the minimum unit of NEO is 1. Its segmentation is not allowed. Thus SNEO is needed as collateral for calculation purpose. The minimum unit of SNEO is 0.00000001. The exchange ratio between NEO and SNEO is constantly 1: 1.</li>' +
-        '<li>At any time, user can freely convert SNEO to NEO and vice versa in Alchemint platform.</li>',
+        '<li>At any time, user can freely convert SNEO to NEO and vice versa in Alchemint platform.</li>' +
+        '<li>If the conversion fails due to improper operation (manual refresh during the block confirmation process or webpage closure) and the quantity of SNEO or NEO gets smaller, please contact us via the email at the bottom of the screen.</li>',
       warnTitle: 'ATTENTION',
       warnInfo: '<li>Do not manually turn off or refresh this page!</li>' +
         '<li>Otherwise the conversion may fail and the quantity might be wrong!</li>' +
-        '<li>Please wait patiently till two 30s countdown on the right is over.</li>'
+        '<li>Please wait patiently till two 30s countdown on the right is over.</li>',
+      transferAgain: 'Conversion failed. Please click Reconvert',
+      transferAgainBtn: 'Reconvert'
     },
     systemStatus: {
       title: 'System Status',
       sneoTotal: 'Total SNEO Collateralized',
       sdusdTotal: 'Total SDUSD Issued',
       allRate: 'Overall Mortgage Rate',
-      liquidateRate: 'Liquidation Rate',
+      liquidateRate: 'Liquidation Trigger Rate',
       liquidateDis: 'Liquidation Discount',
       issuingRate: 'Issuing Fee (Yearly)',
       deptTop: 'Overall Issueing Ceiling (SDUSD)',
@@ -104,7 +115,7 @@ export default {
       sneoCollateralized: 'SNEO Collateralized',
       sneoDrawable: 'SNEO Drawable',
       mortageRate: 'SAR Mortage Rate',
-      liquidationPrice: 'SAR Liquidation Price(SNEO)',
+      liquidationPrice: 'Liquidation Trigger Price(SNEO)',
       status: 'SAR Status',
       history: 'History',
       liquidate: 'Liquidate'
@@ -115,11 +126,11 @@ export default {
       sdusdRemained: 'SDUSD Issuable',
       sneoDrawable: 'SNEO Drawable',
       sarRate: 'SAR Mortgage Rate',
-      feeBalance: 'SDS',
+      feeBalance: 'SDS Balance',
       status: 'SAR Status',
       sdusdIssued: 'SDUSD Issued',
       sneoCollateralized: 'SNEO Collateralized',
-      liquidationPrice: 'SAR Liquidation Price(SNEO)',
+      liquidationPrice: 'Liquidation Trigger Price(SNEO)',
       feeGenerated: 'Fee To Be Paid (SDS) ',
       fee: 'Fee',
       insufficientFee: 'SDS Insufficient,Please recharge before returning',
@@ -136,6 +147,15 @@ export default {
       rechargeInfo: 'Returning SDUSD requires service fee paid by SDS. Please make sure there are enough SDS in your SAR.',
       afterMortgageRate: 'Mortgage Rate',
       afterStatus: 'Status',
+      liquidationRiskInfo: 'If the mortgage rate is below {topRate}%, the liquidation risk is greater.',
+      riskModal: {
+        title: 'Risk Warning',
+        infoTitle: 'If the mortgage rate is below {topRate}%, the liquidation risk is greater.',
+        infoDetail: '<li>If NEO price falls by 15%, your SAR mortgage rate will fall by 22.5%-30%.</li>' +
+          '<li style="margin-top: 10px">If the mortgage rate falls below {lineRate}%, your SAR can be liquidated by others. At the same time, the system will automatically deduct a certain amount of fine according to the liquidation amount and the settlement discount.</li>',
+        cancelBtn: 'Let me think about it',
+        confirmBtn: 'I understand the risks and continue to execute',
+      }
     },
     myBond: {
       title: 'My BOND',
@@ -154,9 +174,9 @@ export default {
       value: 'Value',
       afterLiq: 'Mortage rate after liquidation',
       afterStatus: 'Status after liquidation',
-      info: '<li>When a single SAR mortgage rate is below 150%, the system will display a “Liquidation” button.</li>' +
+      info: '<li>When a single SAR mortgage rate is below {lineRate}%, the system will display a “Liquidation” button.</li>' +
         '<li>You can use SDUSD to liquidate part of the collateral.</li>' +
-        '<li>If a single settlement makes the mortgage rate rise to 150%-160%, the liquidation cannot be continued.</li>'
+        '<li>If a single settlement makes the mortgage rate rise to {lineRate}%-{topRate}%, the liquidation cannot be continued.</li>'
     }
   },
   institution: {
@@ -247,6 +267,10 @@ export default {
     }
   },
   envs: [
+    {
+      name: "neo",
+      label: 'Main net'
+    },
     {
       name: "testNet",
       label: 'Test net'
@@ -355,19 +379,19 @@ export default {
     },
     {
       value: 2,
-      label: 'Increase'
+      label: 'Add SNEO'
     },
     {
       value: 3,
-      label: 'Issue'
+      label: 'Issue SDUSD'
     },
     {
       value: 4,
-      label: 'Draw'
+      label: 'Draw SNEO'
     },
     {
       value: 5,
-      label: 'Return'
+      label: 'Return SDUSD'
     },
     {
       value: 6,
@@ -391,7 +415,7 @@ export default {
     },
     {
       value: 11,
-      label: 'Recharge'
+      label: 'Add SDS'
     },
     {
       value: 12,
@@ -399,7 +423,7 @@ export default {
     },
     {
       value: 13,
-      label: 'Refund'
+      label: 'Draw SDS'
     },
   ],
 }

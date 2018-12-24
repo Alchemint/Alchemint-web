@@ -63,14 +63,14 @@ export function getGlobalTransferCount(params) {
   )
 }
 
-//global transfer transfer detail by txid
+//global transfer detail
 export function getGlobalTransferDetail(params) {
   return fetchGet(
     'getTxByTxid', params
   )
 }
 
-//all nep5 hash
+//all nep5 contract hash
 export function getAllNep5Hash() {
   return fetchPost(
     'getallnep5asset',

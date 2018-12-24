@@ -21,14 +21,14 @@
                    plain
                    class="bond-btn"
                    :disabled="mySar.status!=='3'"
-                   @click="opSettleSar">
+                   @click="opLiquidationModal">
           {{$t('individual.myBond.liquidate')}}
         </el-button>
         <el-button type="primary"
                    plain
                    class="bond-btn"
                    :disabled="!mySar.bondDrawed"
-                   @click="opWithDrawModal">
+                   @click="opPayBackSarModal">
           {{$t('individual.myBond.payBack')}}
         </el-button>
         <el-button type="primary"
@@ -41,7 +41,7 @@
     </div>
 
     <!--history dialog-->
-    <el-dialog class="sar-modal history-modal"
+    <el-dialog class="sar-modal"
                :title="$t('individual.myBond.historyTitle')"
                width="1000px"
                label-position="top"
@@ -52,26 +52,25 @@
       <history-detail v-if="historyList" :data="historyList" type="sarC"></history-detail>
     </el-dialog>
 
-    <!--liquidate dialog-->
-    <el-dialog class="sar-modal settle-modal"
+    <!--liquidation dialog-->
+    <el-dialog class="sar-modal"
                :title="$t('individual.liquidateModal.title')"
-               width="360px"
                label-position="top"
                center
                :show-close="true"
                stripe
                :close-on-click-modal="false"
                :close-on-press-escape="false"
-               :before-close="beforeSettleClose"
-               :visible.sync="settleModal">
-      <el-form ref="settleForm"
+               :before-close="beforeLiquidationClose"
+               :visible.sync="liquidationModal">
+      <el-form ref="liquidationForm"
                label-position="top"
                :rules="rules"
-               :model="settleForm"
+               :model="liquidationForm"
                class="settle-form clearfix">
         <el-form-item :label="$t('individual.liquidateModal.bondAmount')" class="fl" prop="BOND">
           <div>
-            <el-input v-model.number="settleForm.BOND"
+            <el-input v-model.number="liquidationForm.BOND"
                       size="small"
                       style="width: 130px"
                       v-if="mySar"
@@ -79,46 +78,46 @@
                       @change="handleBondChange"></el-input>
             <i class="el-icon-caret-right"></i>
           </div>
-          <div class="form-tip">
-            {{$t('individual.liquidateModal.value')}}：${{settleForm.BONDV}}
+          <div class="form-value">
+            {{$t('individual.liquidateModal.value')}}：${{liquidationForm.BONDV}}
           </div>
         </el-form-item>
         <el-form-item :label="$t('individual.liquidateModal.sneoAmount')" class="fl">
-          <el-input v-model.number="settleForm.SNEO"
+          <el-input v-model.number="liquidationForm.SNEO"
                     disabled
                     size="small"
                     style="width: 130px"></el-input>
-          <div class="form-tip" v-if="sarConfig">
-            {{$t('individual.liquidateModal.value')}}:${{settleForm.SNEOV}}
+          <div class="form-value" v-if="sarConfig">
+            {{$t('individual.liquidateModal.value')}}:${{liquidationForm.SNEOV}}
           </div>
         </el-form-item>
       </el-form>
       <div>
-        <div class="resuce-info mt-30 clearfix">
+        <div class="liquidated-info mt-30 clearfix">
           <span class="fl">{{$t('individual.liquidateModal.afterLiq')}}</span>
-          <span class="fr">{{settleForm.rateShow}}</span>
+          <span class="fr">{{liquidationForm.rateShow}}</span>
         </div>
-        <div class="resuce-info mt-20 clearfix">
+        <div class="liquidated-info mt-20 clearfix">
           <span class="fl">{{$t('individual.liquidateModal.afterStatus')}}</span>
-          <span :class="['fr',{'green':settleForm.status==='0',
-                               'blue':settleForm.status==='1',
-                               'yellow':settleForm.status==='2',
-                               'red':settleForm.status==='3'}]">
-            {{settleForm.status | filterMethod($t('sarCStatus'))}}
+          <span :class="['fr',{'green':liquidationForm.status==='0',
+                               'blue':liquidationForm.status==='1',
+                               'yellow':liquidationForm.status==='2',
+                               'red':liquidationForm.status==='3'}]">
+            {{liquidationForm.status | filterMethod($t('sarCStatus'))}}
           </span>
         </div>
       </div>
       <div slot="footer">
-        <el-button class="sar-modal-btn" @click="beforeSettleClose">
+        <el-button class="sar-modal-btn" @click="beforeLiquidationClose">
           {{$t('global.cancelBtn')}}
         </el-button>
-        <el-button class="sar-modal-btn" type="primary" @click="settleSar">
+        <el-button class="sar-modal-btn" type="primary" @click="liquidateSar">
           {{$t('global.confirmBtn')}}
         </el-button>
       </div>
     </el-dialog>
 
-    <!--payback bond dialog-->
+    <!--pay back bond dialog-->
     <el-dialog class="sar-modal"
                :title="$t('individual.myBond.payBack')"
                label-position="top"
@@ -126,28 +125,28 @@
                :show-close="false"
                :close-on-click-modal="false"
                :close-on-press-escape="false"
-               :visible.sync="withDrawModal.show">
+               :visible.sync="payBackModal.show">
       <el-form>
         <el-form-item label="SDUSD">
-          <el-input-number v-model.number="withDrawModal.amount"
+          <el-input-number v-model.number="payBackModal.amount"
                            controls-position="right"
                            :min="0"
-                           :max="withDrawModal.max"
+                           :max="payBackModal.max"
                            style="width: 100%"></el-input-number>
         </el-form-item>
-        <el-slider v-model="withDrawModal.amount"
+        <el-slider v-model="payBackModal.amount"
                    :step="0.00000001"
                    :min="0"
-                   :max="withDrawModal.max"></el-slider>
+                   :max="payBackModal.max"></el-slider>
       </el-form>
       <div slot="footer">
         <el-button class="sar-modal-btn"
-                   @click="withDrawModal.show = false">{{$t('global.cancelBtn')}}
+                   @click="payBackModal.show = false">{{$t('global.cancelBtn')}}
         </el-button>
         <el-button class="sar-modal-btn"
                    type="primary"
-                   :disabled="withDrawModal.amount<=0"
-                   @click="withDrawBond">{{$t('global.confirmBtn')}}
+                   :disabled="payBackModal.amount<=0"
+                   @click="payBackBond">{{$t('global.confirmBtn')}}
         </el-button>
       </div>
     </el-dialog>
@@ -185,8 +184,8 @@
         mySar: null,
         historyModal: false,
         historyList: null,
-        settleModal: false,
-        settleForm: {
+        liquidationModal: false,
+        liquidationForm: {
           BOND: '',
           SNEO: '',
           BONDV: '',
@@ -201,7 +200,7 @@
             }
           ],
         },
-        withDrawModal: {
+        payBackModal: {
           show: false,
           amount: 0,
           max: 0,
@@ -220,51 +219,62 @@
       }
     },
     methods: {
-      opSettleSar() {
-        this.settleModal = true;
-        this.settleForm.BOND = this.getBondMax();
-        this.getSettleFormVal();
+      //liquidate sar
+      opLiquidationModal() {
+        this.liquidationModal = true;
+        this.liquidationForm.BOND = this.getBondMax();
+        this.getLiquidationFormVal();
       },
-      getSettleFormVal() {
+      getLiquidationFormVal() {
         let {sneo_price, liquidate_line_rate_c} = this.sarConfig;
-        let {sarLocked, sarHasDrawed} = this.mySar;
+        let {sarLocked, sarHasDrawed, ratioAvail} = this.mySar;
         let canClearNeo;
 
-        // bond amount
+        //bond amount
         let mount = formatPrecision(
           printNumber(
-            bigmath.chain(bigmath.bignumber(this.settleForm.BOND))
+            bigmath.chain(bigmath.bignumber(this.liquidationForm.BOND))
               .multiply(bigmath.bignumber(bigmath.pow(10, 8)))
               .done()
           ), 0
         );
         mount = +mount;
 
-        // calculate sneo amount
-        this.settleForm.SNEO = formatPrecision(
-          printNumber(
-            bigmath.chain(bigmath.bignumber(this.settleForm.BOND))
-              .multiply(bigmath.bignumber(bigmath.pow(10, 8)))
-              .divide(bigmath.bignumber(sneo_price))
-              .done()
+        //sneo amount
+        if (+ratioAvail > 1) {
+          this.liquidationForm.SNEO = formatPrecision(
+            printNumber(
+              bigmath.chain(bigmath.bignumber(this.liquidationForm.BOND))
+                .multiply(bigmath.bignumber(bigmath.pow(10, 8)))
+                .divide(bigmath.bignumber(sneo_price))
+                .done()
+            )
+          );
+        } else {
+          this.liquidationForm.SNEO = formatPrecision(
+            printNumber(
+              bigmath.chain(bigmath.bignumber(sarLocked))
+                .divide(bigmath.bignumber(bigmath.pow(10, 8)))
+                .done()
+            )
           )
-        );
+        }
 
-        // calculate sneo and sdusd value
-        this.settleForm.BONDV = formatPrecision(this.settleForm.BOND, 2);
-        this.settleForm.SNEOV = formatPrecision(
+        //sneo and bond value
+        this.liquidationForm.BONDV = formatPrecision(this.liquidationForm.BOND, 2);
+        this.liquidationForm.SNEOV = formatPrecision(
           printNumber(
-            bigmath.chain(bigmath.bignumber(this.settleForm.SNEO))
+            bigmath.chain(bigmath.bignumber(this.liquidationForm.SNEO))
               .multiply(bigmath.bignumber(sneo_price))
               .divide(bigmath.bignumber(bigmath.pow(10, 8)))
               .done()
           ), 2
         );
 
-        // can clear neo
+        //can clear neo
         canClearNeo = formatPrecision(
           printNumber(
-            bigmath.chain(bigmath.bignumber(this.settleForm.SNEO))
+            bigmath.chain(bigmath.bignumber(this.liquidationForm.SNEO))
               .multiply(bigmath.bignumber(bigmath.pow(10, 8)))
               .done()
           )
@@ -276,7 +286,7 @@
           canClearNeo = sarLocked;
         }
 
-        // current rate
+        //rate
         let rate, rateShow;
         if (Number(sarHasDrawed) === Number(mount)) {
           rate = 0;
@@ -306,15 +316,15 @@
           rateShow = formatPrecision(rate, 2) + '%';
         }
         rate = +rate;
-        this.settleForm.rate = rate;
-        this.settleForm.rateShow = rateShow;
+        this.liquidationForm.rate = rate;
+        this.liquidationForm.rateShow = rateShow;
 
-        // liquidated status
+        //liquidated status
         let status;
-        if (rate > (liquidate_line_rate_c + 50)) {
+        if (rate >= (liquidate_line_rate_c + 50)) {
           status = '1';
         }
-        if (rate >= liquidate_line_rate_c && rate <= (liquidate_line_rate_c + 50)) {
+        if (rate >= liquidate_line_rate_c && rate < (liquidate_line_rate_c + 50)) {
           status = '2';
         }
         if (rate < liquidate_line_rate_c) {
@@ -324,7 +334,7 @@
         if (sarLocked === 0 || sarHasDrawed === 0 || rate === 0) {
           status = '0';
         }
-        this.settleForm.status = status;
+        this.liquidationForm.status = status;
       },
       validatorBond(rule, value, callback) {
         let max = Number(this.getBondMax());
@@ -341,7 +351,7 @@
       },
       getBondMax() {
         let {sneo_price, liquidate_top_rate_c} = this.sarConfig;
-        let {sarLocked, sarHasDrawed} = this.mySar;
+        let {sarLocked, sarHasDrawed, ratioAvail} = this.mySar;
 
         let molecule = bigmath.chain(bigmath.bignumber(liquidate_top_rate_c))
           .divide(bigmath.bignumber(100))
@@ -369,12 +379,13 @@
             bigmath.chain(bigmath.bignumber(denominator))
               .divide(bigmath.bignumber(molecule))
               .divide(bigmath.bignumber(bigmath.pow(10, 8)))
-              .subtract(bigmath.bignumber(0.1))
+              .subtract(bigmath.bignumber(0.001))
               .done()
           )
         );
         result = +result;
 
+        //sarHasDrawed
         let mount = formatPrecision(
           printNumber(
             bigmath.chain(bigmath.bignumber(sarHasDrawed))
@@ -385,33 +396,37 @@
 
         mount = +mount;
 
-        return result > mount ? mount : result;
+        if (+ratioAvail > 1) {
+          return result > mount ? mount : result;
+        } else {
+          return mount;
+        }
       },
       handleBondChange(val) {
         if (Number(val)) {
           let max = this.getBondMax();
-          this.settleForm.BOND = this.settleForm.BOND > max ? max : this.settleForm.BOND;
-          this.getSettleFormVal();
+          this.liquidationForm.BOND = this.liquidationForm.BOND > max ? max : this.liquidationForm.BOND;
+          this.getLiquidationFormVal();
         }
       },
-      beforeSettleClose() {
-        this.$refs['settleForm'].resetFields();
-        this.settleModal = false;
+      beforeLiquidationClose() {
+        this.$refs['liquidationForm'].resetFields();
+        this.liquidationModal = false;
       },
-      settleSar() {
-        this.$refs['settleForm'].validate((valid) => {
+      liquidateSar() {
+        this.$refs['liquidationForm'].validate((valid) => {
           if (valid) {
             if (this.disabled) {
               return;
             }
             this.disabled = true;
-            this.getSettleSar();
+            this.launchLiquidateSar();
           } else {
             return false;
           }
         });
       },
-      async getSettleSar() {
+      async launchLiquidateSar() {
         const loading = this.$loading({
           lock: true,
           text: '',
@@ -422,7 +437,7 @@
         let {wif, address} = this.currentUser;
         let amount = formatPrecision(
           printNumber(
-            bigmath.chain(bigmath.bignumber(this.settleForm.BOND))
+            bigmath.chain(bigmath.bignumber(this.liquidationForm.BOND))
               .multiply(bigmath.bignumber(bigmath.pow(10, 8)))
               .done()
           ), 0
@@ -440,18 +455,20 @@
 
         sendDrawTransaction([r.rawData]).then(draw => {
           this.checkTxid(r, draw, () => {
-            this.settleModal = false;
+            this.liquidationModal = false;
             loading.close();
             location.reload();
           });
         }).catch(() => {
-          this.settleModal = false;
+          this.liquidationModal = false;
           this.disabled = false;
         });
 
       },
-      opWithDrawModal() {
-        this.withDrawModal.show = true;
+
+      //pay back bond
+      opPayBackSarModal() {
+        this.payBackModal.show = true;
         let bondDrawed = formatPrecision(
           printNumber(
             bigmath.chain(bigmath.bignumber(this.mySar.bondDrawed))
@@ -471,10 +488,10 @@
         } else {
           max = balance;
         }
-        this.withDrawModal.amount = max;
-        this.withDrawModal.max = max;
+        this.payBackModal.amount = max;
+        this.payBackModal.max = max;
       },
-      async withDrawBond() {
+      async payBackBond() {
         if (this.disabled) {
           return;
         }
@@ -489,7 +506,7 @@
         let {wif, address} = this.currentUser;
         let amount = formatPrecision(
           printNumber(
-            bigmath.chain(bigmath.bignumber(this.withDrawModal.amount))
+            bigmath.chain(bigmath.bignumber(this.payBackModal.amount))
               .multiply(bigmath.bignumber(bigmath.pow(10, 8)))
               .done()
           ), 0
@@ -506,19 +523,19 @@
 
         sendDrawTransaction([r.rawData]).then(draw => {
           this.checkTxid(r, draw, () => {
-            this.withDrawModal.show = false;
+            this.payBackModal.show = false;
             loading.close();
             location.reload();
           });
         }).catch(() => {
-          this.withDrawModal.show = false;
+          this.payBackModal.show = false;
           this.disabled = false;
         });
       },
 
-      //sar history detail
+      //get bond history detail
       async getHistoryDetail() {
-        let params = [this.mySar.sarTxid, 10000, 1];
+        let params = [this.mySar.sarTxid, 100, 1];
         let historyList = await getSarCHistory(params);
         this.historyList = historyList.result;
         if (historyList) {
@@ -546,26 +563,26 @@
     &-top {
       border-bottom: 1px solid $--border-color-base;
       height: 110px;
-    }
-    &-item {
-      float: left;
-      height: 109px;
-      width: 50%;
-      border-right: 1px solid $--border-color-base;
-      padding-left: 20px;
-      &:last-child {
-        border-right: 0;
-      }
-      &__val {
-        margin-top: 36px;
-        font-size: 18px;
-        font-weight: bold;
-      }
-      &__title {
-        font-size: 12px;
-        color: #667;
-        margin-top: 6px;
-        font-family: PingFangSC-Regular;
+      .bond-item {
+        float: left;
+        height: 109px;
+        width: 50%;
+        border-right: 1px solid $--border-color-base;
+        padding-left: 20px;
+        &:last-child {
+          border-right: 0;
+        }
+        &__val {
+          margin-top: 36px;
+          font-size: 18px;
+          font-weight: bold;
+        }
+        &__title {
+          font-size: 12px;
+          color: #667;
+          margin-top: 6px;
+          font-family: PingFangSC-Regular;
+        }
       }
     }
     &-bottom {
@@ -585,22 +602,26 @@
     }
   }
 
-  .el-icon-caret-right {
-    display: inline-block;
-    width: 16px;
-    margin: 0 17px;
-  }
+  .sar-modal {
+    .el-icon-caret-right {
+      display: inline-block;
+      width: 16px;
+      margin: 0 17px;
+    }
 
-  .resuce-info {
-    color: #667;
-    line-height: 30px;
-    border-bottom: 1px solid $--border-color-base;
-  }
+    //after liquidated info
+    .liquidated-info {
+      color: #667;
+      line-height: 30px;
+      border-bottom: 1px solid $--border-color-base;
+    }
 
-  .form-tip {
-    color: #9999AA;
-    width: 130px;
-    overflow-x: hidden;
+    //liquidation form bond and sneo value
+    .form-value {
+      color: #9999AA;
+      width: 130px;
+      overflow-x: hidden;
+    }
   }
 </style>
 

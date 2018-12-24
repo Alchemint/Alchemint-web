@@ -163,7 +163,7 @@ a:hover {
   color: $--color-primary;
 }
 
-// no data display
+//no data
 .no-data {
   text-align: center;
   background: #fff;
@@ -177,7 +177,7 @@ a:hover {
   }
 }
 
-// change element-ui table header
+//cover el-table
 .el-table {
   thead {
     color: #666677 !important;
@@ -196,7 +196,7 @@ a:hover {
   height: 270px !important;
 }
 
-// change element-ui form
+//cover el-form-item
 .el-form-item {
   margin-bottom: 16px !important;
   .el-form-item__label {
@@ -204,7 +204,7 @@ a:hover {
   }
 }
 
-// card
+//cover el-card
 .app-container {
   .border-card {
     border-radius: 2px;
@@ -261,7 +261,7 @@ a:hover {
   }
 }
 
-// sar dialog
+//cover el-dialog
 .sar-modal {
   .el-dialog {
     width: 360px;
@@ -307,7 +307,7 @@ a:hover {
   }
 }
 
-// notify dialog
+//cover el-notify
 .check-notify {
   width: 250px !important;
   padding: 0 !important;
@@ -348,7 +348,7 @@ a:hover {
   }
 }
 
-// reset popper display
+//cover el-popper
 .global-popper {
   border-color: $--color-primary !important;
   font-size: 12px !important;
@@ -365,7 +365,7 @@ a:hover {
   cursor: pointer;
 }
 
-// pagination container
+//pagination
 .pagination-container {
   position: relative;
   padding: 20px 0;
@@ -386,10 +386,14 @@ a:hover {
   }
 }
 
-// tooltip icon
 .tooltip-ul {
   margin: 0 !important;
   padding-left: 16px !important;
   line-height: 16px;
   width: 320px;
+}
+
+//cover el-dialog modal opacity
+.v-modal {
+  opacity: .3 !important;
 }

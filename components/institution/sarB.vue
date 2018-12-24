@@ -203,7 +203,7 @@
       </div>
     </el-dialog>
 
-    <!--init sar dialog-->
+    <!--init token sar dialog-->
     <el-dialog class="sar-modal"
                :title="$t('institution.launchCoin.modalTitle')"
                label-position="top"
@@ -247,8 +247,8 @@
       </div>
     </el-dialog>
 
-    <!--history dialog-->
-    <el-dialog class="sar-modal history-modal"
+    <!--sar history dialog-->
+    <el-dialog class="sar-modal"
                :title="$t('global.history.sarOperationHistory')"
                width="1000px"
                label-position="top"
@@ -292,12 +292,12 @@
         mySar: null,
         wenObj: null,
         isInitBtnShow: true,
-        initSarBtn: false,
-        closeSarBtn: false,
-        expandBtn: false,
-        contractBtn: false,
-        withdrawBtn: false,
-        reserveBtn: false,
+        initSarBtn: true,
+        closeSarBtn: true,
+        expandBtn: true,
+        contractBtn: true,
+        withdrawBtn: true,
+        reserveBtn: true,
         createModal: false,
         createForm: {
           name: '',
@@ -344,9 +344,11 @@
       if (mySar) {
         this.mySar = [mySar];
 
+        //display initSarBtn or closeSarBtn
         let tokenName = await this.$parent.getTokenName(mySar.name);
         this.isInitBtnShow = tokenName ? false : true;
 
+        //init
         if (!this.sdsObj) {
           this.initSarBtn = true;
         } else {
@@ -359,6 +361,7 @@
           this.initSarBtn = Number(sdsBalance) < 10 ? true : false;
         }
 
+        //close sar btn status
         let sarLocked = formatPrecision(
           printNumber(
             bigmath.chain(bigmath.bignumber(mySar.sarLocked))
@@ -372,20 +375,23 @@
           this.closeSarBtn = true;
         }
 
+        //issue sar btn status
         this.expandBtn = Number(mySar.wenCanDraw) <= 0 ? true : false;
         if (this.isInitBtnShow) {
           this.expandBtn = true;
         }
 
+        //return sar btn status
         let wenObj = await this.$parent.getNewBalance(mySar.name, mySar.owner);
-
         if (wenObj) {
           this.wenObj = wenObj;
           this.contractBtn = Number(this.wenObj.balance) <= 0 ? true : false;
         }
 
+        //increase margin sar btn status
         this.reserveBtn = Number(this.sdsObj.balance) <= 0 ? true : false;
 
+        //draw margin sar btn status
         this.withdrawBtn = Number(mySar.availSdsCanfree) <= 0 ? true : false;
       }
     },
@@ -427,11 +433,11 @@
             let method = 'openSAR4B';
 
             let params = [
-              "(str)" + name,    //name
-              "(str)" + symbol,  //symbol
-              "(int)8",          //decimals
-              "(addr)" + address,//address
-              "(str)" + type,    //anchorType
+              "(str)" + name,      //name
+              "(str)" + symbol,    //symbol
+              "(int)8",            //decimals
+              "(addr)" + address,  //address
+              "(str)" + type,      //anchorType
             ];
 
             let r = eNeo.callC(wif, scAddr, method, params);
@@ -562,7 +568,7 @@
             loading.close();
             location.reload();
           });
-        }).catch(err => {
+        }).catch((err) => {
           this.operationModal.show = false;
           this.disabled = false;
         });
@@ -585,8 +591,8 @@
         let method = 'destory';
 
         let params = [
-          "(str)" + this.mySar[0].name,
-          "(addr)" + address,
+          "(str)" + this.mySar[0].name,    //name
+          "(addr)" + address,              //address
         ];
 
         let r = eNeo.callC(wif, scAddr, method, params);
@@ -601,7 +607,7 @@
         });
       },
 
-      //history detail
+      //get sar history
       async getHistoryDetail() {
         let params = [this.mySar[0].sarTxid, this.mySar[0].owner, 10000, 1];
         let historyList = await getSarBHistory(params);

@@ -11,6 +11,7 @@
         </nuxt-link>
       </div>
       <div v-if="type==='json'" class="login-content mt-50">
+        <!--input hidden-->
         <div class="login-input-container">
           <input type="file"
                  style="display: none"
@@ -30,6 +31,7 @@
             <icon-font slot="prefix" name="icon-suo" class="prefix-icon"></icon-font>
           </el-input>
 
+          <!--login err info-->
           <div class="login-err-container">
             <div class="login-err" v-if="errInfo">
               <i class="el-icon-warning red"></i>
@@ -112,6 +114,7 @@
       },
 
       triggerSelectFile() {
+        //trigger the input click of the file and select the local file to upload
         let $file = document.getElementById("json-file");
         $file.click();
       },

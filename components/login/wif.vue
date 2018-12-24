@@ -7,6 +7,7 @@
         <icon-font slot="prefix" name="icon-yuechi" class="prefix-icon"></icon-font>
       </el-input>
 
+      <!--login err info-->
       <div class="login-err-container">
         <div class="login-err" v-if="errInfo">
           <i class="el-icon-warning red"></i>
