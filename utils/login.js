@@ -1,3 +1,5 @@
+import eNeo from '~/utils/eNeo'
+
 function getCurrentUser(me) {
   let cUser = sessionStorage.getItem("currentUser");
   me.$store.commit('SET_CURRENT_USER', JSON.parse(cUser));
@@ -35,10 +37,15 @@ function setUsers(users, me) {
 function logout(me) {
   sessionStorage.removeItem("currentUser");
   sessionStorage.removeItem("users");
+  sessionStorage.removeItem('loginMethod');
   me.$store.commit('SET_USERS', null);
   me.$store.commit('SET_CURRENT_USER', null);
 }
 
+function loginColdWallet(user, me) {
+  setCurrentUer(user, me);
+  setUsers([user], me);
+}
 
 function loginWif(wif, me) {
   let user = eNeo.getInfoFromWIF(wif);
@@ -95,12 +102,12 @@ function getJsonFromWif(name, wif, pwd) {
   wallet.accounts[0] = new ThinNeo.nep6account();
   wallet.accounts[0].address = user.address;
   return new Promise((resolve, reject) => {
-    let prikey = user.prikey;
+    let prikey = user.prikey.hexToBytes();
     ThinNeo.Helper.GetNep2FromPrivateKey(prikey, pwd, wallet.scrypt.N, wallet.scrypt.r, wallet.scrypt.p, (info, result) => {
       if (info == "finish") {
         wallet.accounts[0].nep2key = result;
         wallet.accounts[0].contract = new ThinNeo.contract();
-        wallet.accounts[0].contract.script = ThinNeo.Helper.GetAddressCheckScriptFromPublicKey(user.pubkey).toHexString();
+        wallet.accounts[0].contract.script = ThinNeo.Helper.GetAddressCheckScriptFromPublicKey(user.pubkey.hexToBytes()).toHexString();
         let jsonStr = JSON.stringify(wallet.toJson());
         resolve(jsonStr);
         return;
@@ -140,4 +147,5 @@ export {
   createUser,
   getJsonFromWif,
   downFile,
+  loginColdWallet
 };

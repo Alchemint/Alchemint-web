@@ -61,6 +61,20 @@
     margin-top: 33px;
   }
 
+  //toggle login method
+  .login-toggle {
+    margin-top: 33px;
+    .login-toggle-btn {
+      width: 140px;
+      height: 44px;
+      font-size: 16px;
+      font-weight: 500;
+      &:last-child {
+        margin-left: 20px;
+      }
+    }
+  }
+
   //cover el-input
   .el-input {
     .el-input__inner {

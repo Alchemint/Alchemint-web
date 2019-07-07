@@ -3,49 +3,63 @@
     <div slot="header" class="border-card-header">
       <span class="border-card-header__title">{{$t('institution.mySar')}}</span>
     </div>
+    <!--无SAR-B-->
     <div class="align-center" v-if="!mySar">
       <el-button class="create-btn"
                  type="primary"
-                 :disabled="createSarBtn"
-                 @click="createModal=true">{{$t('institution.createSar')}}
+                 :disabled="createBtn"
+                 @click="validateCreateSar">{{$t('institution.createSar')}}
       </el-button>
     </div>
-    <el-table v-if="mySar" class="no-border-table cell-first-highlight"
-              stripe :data="mySar" style="width: 100%">
+
+    <!--有SAR-B-->
+    <el-table v-if="mySar"
+              class="no-border-table cell-first-highlight"
+              stripe
+              :data="mySar"
+              style="width: 100%">
       <el-table-column prop="symbol"
                        :label="$t('institution.name')"
                        width="120"></el-table-column>
-      <el-table-column prop="anchorType"
+      <el-table-column prop="anchor"
                        :label="$t('institution.type')"
                        width="80">
         <template slot-scope="scope">
-          <span>{{scope.row.anchorType | filterMethod($t('anchorTypes'))}}</span>
+          <span>{{scope.row.anchor | filterMethod($t('anchorTypes'))}}</span>
         </template>
       </el-table-column>
-      <el-table-column prop="sarHasDrawed"
+      <el-table-column prop="hasDrawed"
                        :label="$t('institution.circulation')"
                        align="right"
                        min-width="160">
         <template slot-scope="scope">
-          <div>{{scope.row.sarHasDrawedShow | numFormat}}</div>
-          <div class="coin-val">(${{scope.row.sarHasDrawedTranUsd | numFormat}})</div>
+          <div :title="setDp(scope.row.hasDrawed)">
+            {{scope.row.hasDrawed | decimalPlaces(2)}}
+          </div>
+          <div :title="setDp(scope.row.nep55Value)" class="coin-val">
+            (${{scope.row.nep55Value | decimalPlaces(2)}})
+          </div>
         </template>
       </el-table-column>
-      <el-table-column prop="sarLocked"
+      <el-table-column prop="locked"
                        :label="$t('institution.sdsMargin')"
                        align="right"
                        min-width="200">
         <template slot-scope="scope">
-          <div>{{scope.row.sarLockedShow | numFormat}}</div>
-          <div class="coin-val">(${{scope.row.sarLockedTranUsd | numFormat}})</div>
+          <div :title="setDp(scope.row.locked)">
+            {{scope.row.locked | decimalPlaces(2)}}
+          </div>
+          <div :title="setDp(scope.row.sdsValue)" class="coin-val">
+            (${{scope.row.sdsValue | decimalPlaces(2)}})
+          </div>
         </template>
       </el-table-column>
-      <el-table-column prop="ratioAvailShow"
+      <el-table-column prop="mortgageRate"
                        :label="$t('institution.marginRate')"
                        align="right"
                        min-width="120">
         <template slot-scope="scope">
-          {{scope.row.ratioAvailShow | numFormat}}
+          {{scope.row.mortgageRate | decimalPlaces(2)}}%
         </template>
       </el-table-column>
       <el-table-column prop="status"
@@ -58,8 +72,8 @@
                 :class="[{'blue':Number(scope.row.status)===1,
                           'red':Number(scope.row.status)===2,
                           'yellow':Number(scope.row.status)===3,}]">
-             {{scope.row.status | filterMethod($t('sarBStatus'))}}
-          </span>
+               {{scope.row.status | filterMethod($t('sarBStatus'))}}
+            </span>
         </template>
       </el-table-column>
       <el-table-column :label="$t('institution.operation')"
@@ -69,14 +83,12 @@
             <el-button type="primary"
                        plain
                        class="middle-btn"
-                       :disabled="expandBtn"
                        @click="opSarShow('expande',$t('institution.issue'))">
               {{$t('institution.issue')}}
             </el-button>
             <el-button type="primary"
                        plain
                        class="middle-btn"
-                       :disabled="contractBtn"
                        @click="opSarShow('contract',$t('institution.reture'))">
               {{$t('institution.reture')}}
             </el-button>
@@ -91,7 +103,6 @@
                        plain
                        class="middle-btn"
                        v-else
-                       :disabled="closeSarBtn"
                        @click="closeModal = true">
               {{$t('institution.closeSar')}}
             </el-button>
@@ -100,7 +111,6 @@
             <el-button type="primary"
                        plain
                        class="middle-btn"
-                       :disabled="reserveBtn"
                        :style="{fontSize:$i18n.locale==='en'?'12px':'14px'}"
                        @click="opSarShow('reserve',$t('institution.increaseMargin'))">
               {{$t('institution.increaseMargin')}}
@@ -108,7 +118,6 @@
             <el-button type="primary"
                        plain
                        class="middle-btn"
-                       :disabled="withdrawBtn"
                        :style="{fontSize:$i18n.locale==='en'?'12px':'14px'}"
                        @click="opSarShow('withdraw',$t('institution.drawMargin'))">
               {{$t('institution.drawMargin')}}
@@ -123,12 +132,13 @@
       </el-table-column>
     </el-table>
 
-    <!--create sar dialog-->
+    <!--创建sar模态框-->
     <el-dialog class="sar-modal"
                :title="$t('institution.createCoin.modalTitle')"
                label-position="top"
                center
                :show-close="false"
+               :lock-scroll="false"
                :close-on-click-modal="false"
                :close-on-press-escape="false"
                :visible.sync="createModal">
@@ -150,13 +160,15 @@
                        :value="item.value"></el-option>
           </el-select>
         </el-form-item>
+        <el-form-item :label="$t('global.fee')">
+          <el-checkbox v-model="gasFee">{{$t('global.feeInfo')}}</el-checkbox>
+        </el-form-item>
       </el-form>
       <div slot="footer">
-        <el-button class="sar-modal-btn" @click="createModal = false">
+        <el-button class="sar-modal-btn" @click="createModal=false">
           {{$t('global.cancelBtn')}}
         </el-button>
         <el-button class="sar-modal-btn"
-                   :disabled="createConfirmBtn"
                    type="primary"
                    @click="createSar">
           {{$t('global.confirmBtn')}}
@@ -164,7 +176,7 @@
       </div>
     </el-dialog>
 
-    <!--operation sar dialog-->
+    <!--操作sar模态框-->
     <el-dialog class="sar-modal"
                :title="operationModal.title"
                label-position="top"
@@ -172,11 +184,12 @@
                :close-on-click-modal="false"
                :close-on-press-escape="false"
                :show-close="false"
+               :lock-scroll="false"
                :visible.sync="operationModal.show">
-      <el-form @submit.native.prevent>
-        <el-form-item :label="operationModal.name" props="num">
+      <el-form @submit.native.prevent ref="operationSarB"
+               :rules="operationRules" :model="operationModal">
+        <el-form-item :label="operationModal.name" prop="amount">
           <el-input-number v-model="operationModal.amount"
-                           :placeholder="$t('')"
                            controls-position="right"
                            :min="0"
                            :max="operationModal.max"
@@ -192,114 +205,123 @@
           v-html="$t('institution.drawMarginInfo')"
           style="line-height: 30px;color:#667">
       </ul>
+      <el-checkbox class="mt-30" v-model="gasFee">{{$t('global.feeInfo')}}</el-checkbox>
       <div slot="footer">
         <el-button class="sar-modal-btn"
-                   @click="operationModal.show = false">{{$t('global.cancelBtn')}}
+                   @click="resetOperationModal">{{$t('global.cancelBtn')}}
         </el-button>
         <el-button class="sar-modal-btn"
                    type="primary"
-                   @click="opSar">{{$t('global.confirmBtn')}}
+                   @click="validateOperationForm">{{$t('global.confirmBtn')}}
         </el-button>
       </div>
     </el-dialog>
 
-    <!--init token sar dialog-->
+    <!--initToken sar模态框-->
     <el-dialog class="sar-modal"
                :title="$t('institution.launchCoin.modalTitle')"
                label-position="top"
+               @close="initTokenErr=''"
                center
                :close-on-click-modal="false"
                :close-on-press-escape="false"
                :show-close="false"
+               :lock-scroll="false"
                :visible.sync="initTokenModal">
       <ul class="close-sar-info" v-html="$t('institution.launchCoin.info')"></ul>
+      <div class="mt-30">
+        <el-checkbox v-model="gasFee">{{$t('global.feeInfo')}}</el-checkbox>
+      </div>
+      <div class="init-token-err" v-if="initTokenErr">{{initTokenErr}}</div>
       <div slot="footer">
         <el-button class="sar-modal-btn"
-                   @click="initTokenModal = false">{{$t('global.cancelBtn')}}
+                   @click="initTokenModal=false">{{$t('global.cancelBtn')}}
         </el-button>
         <el-button class="sar-modal-btn"
                    type="primary"
-                   :disabled="initSarBtn"
-                   @click="initToken">{{$t('global.confirmBtn')}}
+                   @click="validateInitToken">{{$t('global.confirmBtn')}}
         </el-button>
       </div>
     </el-dialog>
 
-    <!--close sar dialog-->
+    <!--关闭sar模态框-->
     <el-dialog class="sar-modal"
                :title="$t('institution.closeSar')"
                label-position="top"
                center
                :show-close="false"
+               :lock-scroll="false"
+               @close="closeErr=''"
                :close-on-click-modal="false"
                :close-on-press-escape="false"
                :visible.sync="closeModal">
       <ul class="close-sar-info" v-html="$t('institution.closeSarInfo')"></ul>
+      <div class="init-token-err" v-if="closeErr">{{closeErr}}</div>
+      <el-checkbox class="mt-30" v-model="gasFee">{{$t('global.feeInfo')}}</el-checkbox>
       <div slot="footer">
         <el-button class="sar-modal-btn"
-                   @click="closeModal = false">{{$t('global.cancelBtn')}}
+                   @click="closeModal=false">{{$t('global.cancelBtn')}}
         </el-button>
         <el-button class="sar-modal-btn"
                    type="primary"
-                   :disabled="closeSarBtn"
-                   @click="closeSar">{{$t('global.confirmBtn')}}
+                   @click="validateCloseSar">{{$t('global.confirmBtn')}}
         </el-button>
       </div>
     </el-dialog>
 
-    <!--sar history dialog-->
+    <!--sar操作历史记录-->
     <el-dialog class="sar-modal"
                :title="$t('global.history.sarOperationHistory')"
                width="1000px"
                label-position="top"
                center
                :show-close="true"
+               :lock-scroll="false"
                stripe
                :visible.sync="historyModal">
       <history-detail v-if="historyList" :data="historyList" type="sarB"></history-detail>
     </el-dialog>
+
+    <!--硬件钱包签名提示-->
+    <cold-wallet-dialog :cold-wallet-dialog-visible="coldWalletDialogVisible"></cold-wallet-dialog>
   </el-card>
 </template>
 
 <script>
-  import {filterMethod, numFormat} from '../../filters'
-  import {sendDrawTransaction} from '../../api/global'
-  import sarAddr from '../../mixins/getSarAddr'
-  import checkTxid from '../../mixins/checkTxid'
+  import {getCurrentUser} from '~/utils/login'
+  import {getsar4BDetailByAdd, getSarBHistory} from '~/api/institution'
+  import getSarAddr from '~/mixins/getSarAddr'
+  import {sendDrawTransaction, getUtxo, invokeScript} from '~/api/global'
+  import checkTxid from '~/mixins/checkTxid'
+  import {filterMethod, decimalPlaces} from '~/filters/core'
+  import getLeaderPubkey from '~/mixins/getLeaderPubkey'
   import {find} from 'lodash'
-  import {bigmath, formatPrecision, printNumber} from "../../utils/index";
-  import {getSarBHistory} from '../../api/institution'
-  import historyDetail from '../public/historyDetail'
+  import {BN, setDp} from "~/utils/core";
+  import historyDetail from '~/components/public/historyDetail'
+  import {LOADING_OPTION} from '../../filters/const'
+  import {mapGetters} from 'vuex'
+  import eNeo from '~/utils/eNeo'
 
   export default {
     name: 'SarB',
     props: {
-      currentUser: {
-        type: Object,
+      typeB: {
+        type: Array,
         required: true,
       },
-      sarConfig: {
-        type: Object,
-        required: true,
-      },
-      sdsObj: {
-        type: Object,
-        required: true,
-      },
+      assets: {}
     },
     data() {
       return {
-        mySar: null,
-        wenObj: null,
-        isInitBtnShow: true,
-        initSarBtn: true,
-        closeSarBtn: true,
-        expandBtn: true,
-        contractBtn: true,
-        withdrawBtn: true,
-        reserveBtn: true,
-        createModal: false,
-        createForm: {
+        currentUser: null, //用户信息
+        mySar: null, //Sar信息
+        btnLocked: false,  //按钮锁定，避免多次弹框
+        gasFee:false, //GAS手续费
+
+        //创建sar信息
+        createBtn: true, // 创建sar按钮disabled的状态
+        createModal: false, //创建sar模态框
+        createForm: { //创建sar表单
           name: '',
           type: '',
         },
@@ -309,10 +331,14 @@
               validator: this.validateName, trigger: 'blur',
             }
           ]
-        },
-        createSarBtn: true,
-        createConfirmBtn: false,
-        initTokenModal: false,
+        }, //创建sar表单验证
+
+        //initTokenSar信息
+        isInitBtnShow: true, //判断显示initToken还是closeSar
+        initTokenModal: false, //initToken模态框
+        initTokenErr: '', //无法启动sar,
+
+        //操作sar(发行/回收稳定币，增加/回收保证金)
         operationModal: {
           show: false,
           title: '',
@@ -322,82 +348,193 @@
           amount: 0,
           max: 100,
         },
+        operationRules: {
+          amount: [
+            {
+              validator: this.validateAmount, trigger: 'blur'
+            }
+          ],
+        },
+
+        //关闭sar
         closeModal: false,
+        closeErr: '',
+
+        //历史数据
         historyModal: false,
         historyList: null,
-        disabled: false,
       }
     },
-    filters: {
-      filterMethod,
-      numFormat
+    computed: {
+      ...mapGetters(['typeA'])
     },
-    mixins: [sarAddr, checkTxid],
     components: {
       historyDetail,
     },
+    mixins: [getSarAddr, getLeaderPubkey, checkTxid],
+    filters: {
+      filterMethod,
+      decimalPlaces,
+    },
     async mounted() {
-      this.createForm.type = this.$t('anchorTypes')[0].value;
+      //用户信息
+      let user = getCurrentUser(this);
+      this.currentUser = user;
 
-      let mySar = await this.$parent.getSarInfo(this.currentUser.address);
-      this.createSarBtn = false;
-      if (mySar) {
-        this.mySar = [mySar];
-
-        //display initSarBtn or closeSarBtn
-        let tokenName = await this.$parent.getTokenName(mySar.name);
-        this.isInitBtnShow = tokenName ? false : true;
-
-        //init
-        if (!this.sdsObj) {
-          this.initSarBtn = true;
-        } else {
-          let sdsBalance = formatPrecision(
-            printNumber(
-              bigmath.chain(bigmath.bignumber(this.sdsObj.balance))
-                .divide(bigmath.bignumber(bigmath.pow(10, 8)))
-                .done()
-            ));
-          this.initSarBtn = Number(sdsBalance) < 10 ? true : false;
-        }
-
-        //close sar btn status
-        let sarLocked = formatPrecision(
-          printNumber(
-            bigmath.chain(bigmath.bignumber(mySar.sarLocked))
-              .divide(bigmath.bignumber(bigmath.pow(10, 8)))
-              .done()
-          )
-        );
-        if (Number(mySar.sarHasDrawed) === 0 && Number(sarLocked) === 10) {
-          this.closeSarBtn = false;
-        } else {
-          this.closeSarBtn = true;
-        }
-
-        //issue sar btn status
-        this.expandBtn = Number(mySar.wenCanDraw) <= 0 ? true : false;
-        if (this.isInitBtnShow) {
-          this.expandBtn = true;
-        }
-
-        //return sar btn status
-        let wenObj = await this.$parent.getNewBalance(mySar.name, mySar.owner);
-        if (wenObj) {
-          this.wenObj = wenObj;
-          this.contractBtn = Number(this.wenObj.balance) <= 0 ? true : false;
-        }
-
-        //increase margin sar btn status
-        this.reserveBtn = Number(this.sdsObj.balance) <= 0 ? true : false;
-
-        //draw margin sar btn status
-        this.withdrawBtn = Number(mySar.availSdsCanfree) <= 0 ? true : false;
+      //未登录，启用create按钮
+      if (!user) {
+        this.createBtn = false;  //启用create sar按钮
+        return;
       }
+
+      //登录，获取Sar数据
+      await this.getMySarInfo();
     },
     methods: {
+      setDp,
+
+      //获取mySar信息
+      async getMySarInfo() {
+        let _mySar = await getsar4BDetailByAdd([this.currentUser.address, this.sarAddr.sarB.hash]);
+        let mySarArr = _mySar.result;
+        if (!mySarArr) {
+          this.createBtn = false;  //启用create sar按钮
+          this.mySar = null;
+          return;
+        }
+
+        let mySar = mySarArr[0];
+
+        //数据处理
+        //计算所需oracle配置参数
+        let sds_price = find(this.typeB, o => o.key === 'sds_price').value;
+        if (!this.typeA) {
+          await this.$store.dispatch('getTypeA');
+        }
+        let lineRateB = find(this.typeA, o => o.key === 'liquidate_line_rate_b').value;
+        let anchorPrice = find(this.typeB, o => o.key === mySar.anchor).value;
+
+        //所有稳定币数量，可发行稳定币数量
+        BN.config({DECIMAL_PLACES: 20});
+        let allNep55Balance = new BN(mySar.locked).times(sds_price)
+          .div(lineRateB).div(anchorPrice).times(100).dp(8).toString();
+        let issueNep55Balance = new BN(allNep55Balance).minus(mySar.hasDrawed).dp(8, 3).toString();
+
+        mySar.allNep55Balance = allNep55Balance > 0 ? allNep55Balance : 0;
+        mySar.issueNep55Balance = issueNep55Balance > 0 ? issueNep55Balance : 0;
+
+        //已发行保证金数量，可回收保证金数量
+        let issueSdsBalance = new BN(mySar.hasDrawed).times(anchorPrice)
+          .times(lineRateB).div(100).div(sds_price).dp(8, 3).toString();
+        let returnSdsBalance = new BN(mySar.locked).minus(issueSdsBalance).minus(10).dp(8, 3).toString();
+
+        mySar.issueSdsBalance = issueSdsBalance > 0 ? issueSdsBalance : 0;
+        mySar.returnSdsBalance = returnSdsBalance > 0 ? returnSdsBalance : 0;
+
+        //检查initToken按钮显示状态
+        if (mySarArr) {
+          let tokenName = await this.judgeNep55NameExist(mySarArr[0].name);
+          this.isInitBtnShow = tokenName ? false : true;
+        }
+
+        //赋值
+        this.mySar = mySarArr;
+        this.createBtn = false;  //启用create sar按钮
+      },
+
+      //弹出create模态框
+      validateCreateSar() {
+        let locale = this.$i18n.locale;
+        //未登录，跳转到登录界面
+        if (!this.currentUser) {
+          this.$alert('', locale === 'zh' ? '未登录' : 'Not logged in', {
+            confirmButtonText: locale === 'zh' ? '立即登录' : 'Login Now',
+            confirmButtonClass: 'login-now-btn',
+            customClass: 'login-now-container',
+            center: true,
+          }).then(() => {
+            this.$router.replace({path: `${this.$i18n.locale === 'en' ? '' : '/zh'}/login`});
+          });
+          return;
+        }
+
+        //登录，弹出create模态框
+        this.createModal = true;
+        this.createForm.type = this.$t('anchorTypes')[0].value;
+      },
+
+      //创建sar
+      async createSar() {
+        this.$refs['createForm'].validate(async (valid) => {
+          if (valid) {
+            //按钮锁定，避免二次弹框
+            if (this.btnLocked) {
+              return;
+            }
+            this.btnLocked = true;
+
+            const loading = this.$loading(LOADING_OPTION);
+            let {wif, address} = this.currentUser;
+
+            //获取utxos
+            let utxo = await getUtxo([address]);
+            let payfee = this.gasFee ? '0.001' : false;
+
+            //创建sar所需参数
+            let scAddr = this.sarAddr.sarB.hash;
+            let name = this.createForm.name;
+            let symbol = `SD-${this.createForm.name}`;
+            let type = this.createForm.type;
+            let method = 'openSAR4B';
+            let params = [
+              "(str)" + name,      //name
+              "(str)" + symbol,    //symbol
+              "(int)8",            //decimals
+              "(addr)" + address,  //address
+              "(str)" + type,      //anchor
+            ];
+
+            //签名
+            let tempObj = {
+              wif,
+              utxos: utxo.result ? utxo.result : null,
+              scAddr,
+              type: method,
+              params,
+            };
+
+            this.getSignature("callc", tempObj, payfee, loading).then(r => {
+              //签名失败
+              if (!r) {
+                loading.close();
+                this.btnLocked = false;
+                return;
+              }
+              //广播
+              sendDrawTransaction([r.rawData]).then(draw => {
+                //轮询查询是否写入区块
+                this.checkTxid(r, draw, () => {
+                  this.btnLocked = false;
+                  this.createModal = false;
+                  this.updateViewData();
+                  loading.close();
+                });
+              }).catch(() => {
+                this.createModal = false;
+                this.btnLocked = false;
+                loading.close();
+              });
+            })
+
+          } else {
+            return;
+          }
+        });
+      },
+
+      //验证sar名称
       async validateName(rule, value, callback) {
-        let isExist = await this.$parent.getTokenName(`SD-${value}`);
+        let isExist = await this.judgeNep55NameExist(`SD-${value}`);
         let locale = this.$i18n.locale;
 
         if (!value || !/^[A-Z]{3,5}$/.test(value)) {
@@ -409,88 +546,70 @@
         }
       },
 
-      async createSar() {
-        this.$refs['createForm'].validate((valid) => {
-          if (valid) {
-            if (this.disabled) {
-              return;
-            }
-            this.disabled = true;
-            const loading = this.$loading({
-              lock: true,
-              text: '',
-              spinner: 'el-icon-loading',
-              background: 'rgba(0, 0, 0, 0.7)'
-            });
-            this.createConfirmBtn = true;
-            this.createSarBtn = true;
-
-            let scAddr = this.sarAddr.sarB.hash;
-            let {wif, address} = this.currentUser;
-            let name = this.createForm.name;
-            let symbol = `SD-${this.createForm.name}`;
-            let type = this.createForm.type;
-            let method = 'openSAR4B';
-
-            let params = [
-              "(str)" + name,      //name
-              "(str)" + symbol,    //symbol
-              "(int)8",            //decimals
-              "(addr)" + address,  //address
-              "(str)" + type,      //anchorType
-            ];
-
-            let r = eNeo.callC(wif, scAddr, method, params);
-
-            sendDrawTransaction([r.rawData]).then(draw => {
-              this.checkTxid(r, draw, () => {
-                this.createConfirmBtn = false;
-                this.createModal = false;
-                loading.close();
-                location.reload();
-              });
-            }).catch(() => {
-              loading.close();
-              this.createConfirmBtn = false;
-              this.createSarBtn = false;
-              this.createModal = false;
-              this.disabled = false;
-            });
-          } else {
-            return false;
-          }
-        });
-      },
-      initToken() {
-        if (this.disabled) {
+      //检验initToken是否可以弹框
+      async validateInitToken() {
+        let sdsBalance = this.assets.find(o => o.assetid === this.sarAddr.sds.hash).balance;
+        if (sdsBalance >= 10) {
+          this.initTokenModal = true;
+          this.initTokenErr = '';
+          await this.initToken();
           return;
         }
-        this.disabled = true;
-        const loading = this.$loading({
-          lock: true,
-          text: '',
-          spinner: 'el-icon-loading',
-          background: 'rgba(0, 0, 0, 0.7)'
-        });
+
+        let locale = this.$i18n.locale;
+        this.initTokenErr = locale === 'zh' ? '提示：账户中SDS不足10个，无法启动SAR' : `Tip：Less than 10 SDS in the account, unable to start SAR`;
+      },
+
+      //initToken sar
+      async initToken() {
+        if (this.btnLocked) {
+          return;
+        }
+        this.btnLocked = true;
+        const loading = this.$loading(LOADING_OPTION);
         let {wif, address} = this.currentUser;
+
+        //获取utxos
+        let utxo = await getUtxo([address]);
+        let payfee = this.gasFee ? '0.001' : false;
+
         let scAddr = this.sarAddr.sarB.hash;
         let params = [
           "(addr)" + address
         ];
 
-        let r = eNeo.callC(wif, scAddr, 'initToken', params);
+        //签名
+        let tempObj = {
+          wif,
+          scAddr,
+          utxos: utxo.result ? utxo.result : null,
+          type: 'initToken',
+          params,
+        };
+        let r = await this.getSignature("callc", tempObj, payfee, loading);
+        if (!r) {
+          loading.close();
+          this.btnLocked = false;
+          return;
+        }
 
+        //广播
         sendDrawTransaction([r.rawData]).then(draw => {
+          //轮询
           this.checkTxid(r, draw, () => {
+            this.initTokenModal = false;
+            this.btnLocked = false;
+            this.updateViewData();
             loading.close();
-            location.reload();
           });
         }).catch(() => {
           this.initTokenModal = false;
-          this.disabled = false;
+          this.btnLocked = false;
+          loading.close();
         });
       },
 
+      //弹出操作模态框
       opSarShow(type, title) {
         this.operationModal.show = true;
         this.operationModal.title = title;
@@ -500,60 +619,84 @@
         switch (type) {
           case 'expande':
             this.operationModal.name = this.mySar[0].name;
-            opSarMax = mySar.wenCanDraw;
+            opSarMax = mySar.issueNep55Balance;
             break;
           case 'contract':
             this.operationModal.name = this.mySar[0].name;
-            let wenBalance = formatPrecision(
-              printNumber(
-                bigmath.chain(bigmath.bignumber(this.wenObj.balance))
-                  .divide(bigmath.bignumber(bigmath.pow(10, 8)))
-                  .done()
-              )
-            );
-            opSarMax = wenBalance || 0;
+            let nep55 = find(this.assets, o => o.symbol === this.mySar[0].name);
+            let nep55Balance = nep55 ? nep55.balance : 0;
+            opSarMax = nep55Balance || 0;
             break;
           case 'reserve':
             this.operationModal.name = 'SDS';
-            let sdsBalance = formatPrecision(
-              printNumber(
-                bigmath.chain(bigmath.bignumber(this.sdsObj.balance))
-                  .divide(bigmath.bignumber(bigmath.pow(10, 8)))
-                  .done()
-              )
-            );
+            let sdsBalance = find(this.assets, o => o.assetid === this.sarAddr.sds.hash).balance;
             opSarMax = sdsBalance || 0;
             break;
           case 'withdraw':
             this.operationModal.name = 'SDS';
-            opSarMax = mySar.availSdsCanfree || 0;
+            opSarMax = mySar.returnSdsBalance || 0;
         }
         opSarMax = +opSarMax;
         this.operationModal.amount = opSarMax;
         this.operationModal.max = opSarMax;
       },
+
+      //检查amount
+      validateAmount(rule, value, callback) {
+        let locale = this.$i18n.locale;
+        let decimals = new BN(value).dp();
+        if (this.isInitBtnShow) {
+          callback(new Error(locale === 'zh' ? '需要先启动sar' : 'SAR needs to be started first'));
+        } else if (Number(value) <= 0) {
+          callback(new Error(locale === 'zh' ? '输入值必须大于0' : 'The input value must be greater than 0'));
+        } else if (isNaN(value)) {
+          callback(new Error(locale === 'zh' ? '输入值必须大于0' : 'The input value must be greater than 0'));
+        } else if (decimals > 8) {
+          callback(new Error(locale === 'zh' ? '小数位数不能超过8位' : ' The number of decimal places cannot exceed 8 digits'));
+        } else {
+          callback();
+        }
+      },
+
+      //判断是否可以发起请求
+      validateOperationForm() {
+        this.$refs['operationSarB'].validate((valid) => {
+          if (valid) {
+            this.opSar();
+          } else {
+            return false;
+          }
+        });
+      },
+
+      //重置operationModal的form表单
+      resetOperationModal() {
+        this.operationModal.show = false;
+        this.$refs['operationSarB'].resetFields();
+      },
+
+      //操作sar(发行/回收稳定币，增加/回收保证金)
       async opSar() {
-        if (this.disabled) {
+        if (this.btnLocked) {
           return;
         }
-        this.disabled = true;
-        const loading = this.$loading({
-          lock: true,
-          text: '',
-          spinner: 'el-icon-loading',
-          background: 'rgba(0, 0, 0, 0.7)'
-        });
+        this.btnLocked = true;
 
         let scAddr = this.sarAddr.sarB.hash;
         let {wif, address} = this.currentUser;
         let {type, amount} = this.operationModal;
-        amount = formatPrecision(
-          printNumber(
-            bigmath.chain(bigmath.bignumber(amount))
-              .multiply(bigmath.bignumber(bigmath.pow(10, 8)))
-              .done()
-          ), 0
-        );
+
+        //获取utxos
+        let utxo = await getUtxo([address]);
+        let payfee = this.gasFee ? '0.001' : false;
+
+        if (amount <= 0) {
+          return;
+        }
+        const loading = this.$loading(LOADING_OPTION);
+
+        amount = new BN(amount).times(Math.pow(10, 8)).integerValue().toString();
+
         let name = this.mySar[0].name;
         let params = [
           "(str)" + name,
@@ -561,31 +704,53 @@
           "(int)" + amount,
         ];
 
-        let r = await eNeo.callC(wif, scAddr, type, params);
+        //签名
+        let tempObj = {
+          wif,
+          scAddr,
+          utxos: utxo.result ? utxo.result : null,
+          type,
+          params,
+        };
+        let r = await this.getSignature("callc", tempObj, payfee, loading);
+        if (!r) {
+          loading.close();
+          this.btnLocked = false;
+          return;
+        }
 
         sendDrawTransaction([r.rawData]).then(draw => {
           this.checkTxid(r, draw, () => {
             loading.close();
-            location.reload();
+            this.operationModal.show = false;
+            this.btnLocked = false;
+            this.updateViewData();
           });
-        }).catch((err) => {
+        }).catch(() => {
           this.operationModal.show = false;
-          this.disabled = false;
+          this.btnLocked = false;
         });
       },
 
-      closeSar() {
-        if (this.disabled) {
+      //检验是否可以关闭sar
+      validateCloseSar() {
+        let {locked, hasDrawed} = this.mySar[0];
+        if (Number(locked) === 10 && Number(hasDrawed) === 0) {
+          this.closeSar();
           return;
         }
-        this.disabled = true;
-        this.closeSarBtn = true;
-        const loading = this.$loading({
-          lock: true,
-          text: '',
-          spinner: 'el-icon-loading',
-          background: 'rgba(0, 0, 0, 0.7)'
-        });
+
+        let locale = this.$i18n.locale;
+        this.closeErr = locale === 'zh' ? `必须确保发行量为0，且保证金数量刚好为10` : `Must ensure that the issue amount is 0 and the margin amount is exactly 10`;
+      },
+
+      //关闭sar
+      async closeSar() {
+        if (this.btnLocked) {
+          return;
+        }
+        this.btnLocked = true;
+        const loading = this.$loading(LOADING_OPTION);
         let scAddr = this.sarAddr.sarB.hash;
         let {wif, address} = this.currentUser;
         let method = 'destory';
@@ -595,21 +760,51 @@
           "(addr)" + address,              //address
         ];
 
-        let r = eNeo.callC(wif, scAddr, method, params);
+        //获取utxos
+        let utxo = await getUtxo([address]);
+        let payfee = this.gasFee ? '0.001' : false;
+
+        //签名
+        let tempObj = {
+          wif,
+          scAddr,
+          utxos: utxo.result ? utxo.result : null,
+          type: method,
+          params,
+        };
+        let r = await this.getSignature("callc", tempObj, payfee, loading);
+        if (!r) {
+          loading.close();
+          this.btnLocked = false;
+          return;
+        }
 
         sendDrawTransaction([r.rawData]).then(draw => {
           this.checkTxid(r, draw, () => {
             loading.close();
-            location.reload();
+            this.btnLocked = false;
+            this.closeModal = false;
+            this.updateViewData();
           });
         }).catch(() => {
-          this.disabled = false;
+          this.btnLocked = false;
+          this.closeModal = false;
+          loading.close();
         });
       },
 
-      //get sar history
+      //轮询之后更新数据
+      updateViewData() {
+        //更新mySar
+        this.getMySarInfo();
+
+        //更新assets,资产价格,列表数据
+        this.$emit('update-data');
+      },
+
+      //获得sar操作历史纪录详情
       async getHistoryDetail() {
-        let params = [this.mySar[0].sarTxid, this.mySar[0].owner, 10000, 1];
+        let params = [this.mySar[0].txid, this.mySar[0].owner, 10000, 1];
         let historyList = await getSarBHistory(params);
         if (historyList.result) {
           this.historyList = historyList.result;
@@ -618,11 +813,32 @@
         }
         this.historyModal = true;
       },
+
+      //检查这个SarB的名称是否已被占用了
+      async judgeNep55NameExist(name) {
+        let scAddr = this.sarAddr.newToken.hash;
+        let params = [
+          {
+            param: ["(str)" + name],
+            method: "name",
+          }
+        ];
+        let scHash = eNeo.emitParams(scAddr, params);
+        let _r = await invokeScript([scHash]);
+        let r = _r.result[0].stack[0].value;
+        if (!r) {
+          return '';
+        }
+        let tokenName = eNeo.hex2String(r);
+        return tokenName;
+      }
     }
   }
 </script>
 
 <style lang="scss" scoped>
+  @import "../../assets/styles/var";
+
   .create-btn {
     margin: 40px 0 20px;
     padding: 12px 25px;
@@ -634,8 +850,18 @@
   }
 
   .close-sar-info {
-    margin-top: 60px;
+    //margin-top: 60px;
     line-height: 32px;
+    margin: 50px 0 0 0;
+    padding-left: 26px;
+  }
+
+  .init-token-err {
+    margin-top: 20px;
+    color: $--color-danger;
+    font-size: 14px;
+    /*font-weight: bold;*/
+    padding-left: 26px;
   }
 </style>
 

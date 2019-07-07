@@ -3,7 +3,7 @@
     <div slot="header" class="border-card-header">
       <span class="border-card-header__title">{{$t('wallet.transferHistory')}}</span>
     </div>
-    <!--transfer category-->
+    <!--转账分类-->
     <div class="transfer-history-search">
       <el-button :type="search==='sdusd'?'primary':'default'"
                  :disabled="loading"
@@ -23,12 +23,12 @@
       </el-button>
     </div>
 
-    <!--transfer list-->
+    <!--转账详情-->
     <div v-loading="loading"
          :element-loading-text="$t('global.loading')"
          element-loading-spinner="el-icon-loading">
       <div v-if="historyList" class="transfer-history-data">
-        <!--not global transfer-->
+        <!--非全局转账-->
         <div v-if="search!=='global'"
              class="transfer-history-item"
              v-for="item in historyList"
@@ -36,7 +36,7 @@
           <div class="time">{{item.date}}</div>
           <div class="detail">
             <template v-if="item.isFrom">
-              <span class="from"><b style="margin-right: 20px">- {{item.value | numFormat}}</b>{{item.name}}</span>
+              <span class="from"><b style="margin-right: 20px">- {{item.value | decimalFormat}}</b>{{item.name}}</span>
               <span><i class="el-icon-upload2" style="margin-right: 6px"></i>
                   {{$t('wallet.to')}}：
                 <span v-if="search==='sdusd' || search==='nep5'">{{item.to?item.to:$t('wallet.cSystemInfo')}}</span>
@@ -52,7 +52,7 @@
               </el-button>
             </template>
             <template v-else>
-              <span class="to"><b style="margin-right: 20px">+ {{item.value | numFormat}}</b>{{item.name}}</span>
+              <span class="to"><b style="margin-right: 20px">+ {{item.value | decimalFormat}}</b>{{item.name}}</span>
               <span><i class="el-icon-download" style="margin-right: 6px"></i>
                   {{$t('wallet.from')}}：
                 <span v-if="search==='sdusd' || search==='nep5'">{{item.from?item.from:$t('wallet.cSystemInfo')}}</span>
@@ -70,16 +70,26 @@
           </div>
         </div>
 
-        <!--global transfer-->
+        <!--全局转账-->
         <div v-if="search==='global'">
           <div v-for="item in historyList"
                :class="['history-global',
                         {'history-is-expanded':item.expanded}]"
                :name="item.txid"
                :key="item.txid">
-            <div class="history-global-title" @click="handleGlobalDetail(item)">
-              <span class="fl"><b style="margin-right: 10px">Txid</b>{{item.txid}}</span>
-              <i class="fr el-icon-arrow-right expanded"></i>
+            <div class="history-global-title">
+              <div class="fl">
+                <b style="margin-right: 10px">Txid</b>{{item.txid.slice(2)}}
+                <el-button type="primary"
+                           plain
+                           class="small-btn"
+                           style="margin-left: 10px"
+                           v-clipboard:copy="item.txid.slice(2)"
+                           v-clipboard:success="onCopy"
+                           v-clipboard:error="onError">{{$t('global.copy')}}
+                </el-button>
+              </div>
+              <i class="fr el-icon-arrow-right expanded" @click="handleGlobalDetail(item)"></i>
               <span class=" fr" style="margin-right: 20px">{{item.date}}</span>
             </div>
             <div class="history-global-content" v-loading="item.loading" v-if="item.expanded">
@@ -92,7 +102,7 @@
                        v-if="item.vin.length>0"
                        :key="vIndex">
                     {{vin.address}}
-                    <span class="from"> -{{vin.value | numFormat}}</span>
+                    <span class="from"> -{{vin.value | decimalFormat}}</span>
                     <span class="from">{{vin.name}}</span>
                   </div>
                 </div>
@@ -104,7 +114,7 @@
                        v-if="item.vout.length>0"
                        :key="outIndex">
                     {{vout.address}}
-                    <span class="to">+{{vout.value | numFormat}}</span>
+                    <span class="to">+{{vout.value | decimalFormat}}</span>
                     <span class="to">{{vout.name}}</span>
                   </div>
                 </div>
@@ -119,7 +129,7 @@
         <div class="txt">{{$t('global.noData')}}</div>
       </div>
 
-      <!--pagination-->
+      <!--分页-->
       <div class="pagination-container clearfix" v-if="totalPage>0">
         <el-pagination background
                        layout="prev, pager, next"
@@ -142,13 +152,12 @@
 </template>
 
 <script>
-  import {formatTime} from '../../utils'
-  import {getBlockTime} from '../../api/global'
-  import clipboard from '../../mixins/clipboard'
-  import getSarAddr from '../../mixins/getSarAddr'
+  import {formatTime, BN} from '~/utils/core'
+  import {getBlockTime} from '~/api/global'
+  import clipboard from '~/mixins/clipboard'
+  import getSarAddr from '~/mixins/getSarAddr'
   import {mapGetters} from 'vuex'
   import {find, forEach, cloneDeep, filter} from 'lodash'
-  import {numFormat} from '../../filters'
   import {
     getNep5Transfer,
     getNep5TransferCount,
@@ -158,7 +167,8 @@
     getGlobalTransferCount,
     getGlobalTransferDetail,
     getAllNep5Hash
-  } from '../../api/wallet'
+  } from '~/api/wallet'
+  import eNeo from '~/utils/eNeo'
 
   export default {
     name: 'TransferDetail',
@@ -183,14 +193,19 @@
     },
     mixins: [clipboard, getSarAddr],
     filters: {
-      numFormat,
+      decimalFormat(val) {
+        if (!val) {
+          return val;
+        }
+        return new BN(val).toFormat();
+      }
     },
     async created() {
       await this.getCurrentHash();
       await this.launchSdusdTransfer();
     },
     methods: {
-      //toggle transfer type
+      //切换转账类型
       async launchSdusdTransfer() {
         this.search = 'sdusd';
         this.loading = true;
@@ -220,14 +235,14 @@
         await this.getGlobalTransfer();
       },
 
-      //get all nep5 hash
+      //获取所有nep5的hash
       async getCurrentHash() {
         let _sarAddr = await getAllNep5Hash();
         let sarAddr = _sarAddr.result ? _sarAddr.result : [];
         this.currentSarAddr = sarAddr;
       },
 
-      //get transfer list
+      //获取转账列表
       async getNep5Transfer() {
         let params;
         if (this.search === 'nep5') {
@@ -292,7 +307,7 @@
         this.loading = false;
       },
 
-      //get transfer count
+      //获取转账总条数
       getSdusdCount() {
         let params = [this.currentUser.address, this.sarAddr.sdusd.hash];
         getNep5TransferCount(params).then(res => {
@@ -326,7 +341,6 @@
         })
       },
 
-      //page change
       handleCurrentChange(val) {
         this.loading = true;
         this.currentPage = val;
@@ -349,7 +363,7 @@
         }
       },
 
-      //get global transfer detail by txid
+      //通过TXID获取全局转账详情
       async handleGlobalDetail(obj) {
         //flexible btn
         if (obj.expanded) {
@@ -399,7 +413,6 @@
         }
         for (let i = 0, len = arr.length; i < len; i++) {
           let item = arr[i];
-          //judge is neo or gas
           for (let key in eNeo.config) {
             if (eNeo.config[key] === item.asset) {
               if (key === 'neoId') {
@@ -435,6 +448,7 @@
 <style lang="scss" scoped>
   @import "../../assets/styles/var";
   @import "../../assets/styles/mixin";
+
   .transfer-history {
     &-search {
       padding: 10px 0;

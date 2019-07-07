@@ -28,11 +28,18 @@
         <span class="otherwise-line-text">{{$t('global.otherwise')}}</span>
       </div>
     </div>
-    <el-button type="primary"
-               plain
-               class="login-btn"
-               @click.native="$parent.type='json'">{{$t('login.loginByJson')}}
-    </el-button>
+    <div class="login-toggle">
+      <el-button type="primary"
+                 plain
+                 class="login-toggle-btn"
+                 @click.native="$parent.type='coldWallet'">{{$t('login.loginByCold')}}
+      </el-button>
+      <el-button type="primary"
+                 plain
+                 class="login-toggle-btn"
+                 @click.native="$parent.type='json'">{{$t('login.loginByJson')}}
+      </el-button>
+    </div>
   </div>
 </template>
 
@@ -67,6 +74,9 @@
         this.loading = true;
         try {
           loginWif(this.wif, this);
+
+          //缓存登录方式
+          sessionStorage.setItem('loginMethod', 'priKey');
           this.$router.push({path: this.$i18n.path('wallet')});
         } catch (e) {
           this.errInfo = true;

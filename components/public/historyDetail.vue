@@ -1,5 +1,5 @@
 <template>
-  <el-table class="no-border-table"
+  <el-table class="no-border-table empty-img-table"
             :data="data"
             stripe
             max-height="400"
@@ -28,7 +28,9 @@
                      align="right"
                      min-width="120">
       <template slot-scope="scope">
-        <span>{{scope.row.value | printNumber}}</span>
+        <span :title="setDp(scope.row.value)">
+          {{scope.row.value | decimalPlaces}}
+        </span>
       </template>
     </el-table-column>
     <el-table-column prop="txid"
@@ -39,7 +41,7 @@
         {{scope.row.txid | filterTxid}}
         <icon-font class='copy-btn'
                    name="icon-fuzhi1"
-                   v-clipboard:copy="scope.row.txid"
+                   v-clipboard:copy="scope.row.txid.substring(2)"
                    v-clipboard:success="onCopy"
                    v-clipboard:error="onError"></icon-font>
       </template>
@@ -48,9 +50,9 @@
 </template>
 
 <script>
-  import {filterMethod, filterTime} from '../../filters/index'
-  import clipboard from '../../mixins/clipboard'
-  import {bigmath} from "../../utils";
+  import {filterMethod, filterTime, decimalPlaces} from '~/filters/core'
+  import clipboard from '~/mixins/clipboard'
+  import {BN, setDp} from "~/utils/core";
 
   export default {
     name: 'HistoryDetail',
@@ -67,17 +69,15 @@
     filters: {
       filterMethod,
       filterTime,
+      decimalPlaces,
       filterTxid(val) {
-        return val.slice(0, 4) + "..." + val.substr(val.length - 4);
-      },
-      printNumber(value, precision = 8) {
-        return bigmath.format(
-          Number(value),
-          {notation: 'fixed', precision: precision}
-        );
+        return val.slice(2, 6) + "..." + val.substr(val.length - 4);
       }
     },
     mixins: [clipboard],
+    methods: {
+      setDp,
+    }
   }
 </script>
 

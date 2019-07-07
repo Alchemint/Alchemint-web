@@ -1,13 +1,16 @@
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+
 module.exports = {
   mode: 'spa',
   /*
    ** Headers of the page
    */
   head: {
-    title: 'alchemint',
-    meta: [{
-      charset: 'utf-8'
-    },
+    title: 'Alchemint',
+    meta: [
+      {
+        charset: 'utf-8'
+      },
       {
         httpEquiv: 'X-UA-Compatible',
         content: 'IE=edge,chrome=1'
@@ -19,7 +22,23 @@ module.exports = {
       {
         hid: 'description',
         name: 'description',
-        content: 'Nuxt.js project'
+        content: 'Alchemint is a decentralized stablecoin issuing platform based on NEO blockchain. '
+      },
+      {
+        property: 'og:title', content: 'Alchemint',
+      },
+      {
+        property: 'og:image', content: 'https://neo.alchemint.io/_nuxt/img/logo_higher.c161d46.png',
+      },
+      {
+        property: 'og.description',
+        content: 'Alchemint is a decentralized stablecoin issuing platform based on NEO blockchain. ',
+      },
+      {
+        property: 'og.locale', content: 'en_US',
+      },
+      {
+        property: 'og.url', content: 'https://neo.alchemint.io/o3',
       }
     ],
     link: [{
@@ -48,14 +67,11 @@ module.exports = {
       },
       {
         src: '/neoLib/neo-ts.js'
-      },
-      {
-        src: '/neoLib/eNeo.js'
       }
     ]
   },
   env: {
-    _ENV: process.env._ENV || 'pri',
+    _ENV: process.env._ENV || 'testNet',
   },
   /*
    ** Customize the progress bar color
@@ -70,22 +86,19 @@ module.exports = {
     /*
      ** Run ESLint on save
      */
-    extend(config, {
-      isDev,
-      isClient
-    }) {
+    extend(config, {isDev, isClient}) {
+      //扩展webpack的配置
       if (isDev && isClient) {
-        config.entry['polyfill'] = ['babel-polyfill'];
         config.module.rules.push({
           enforce: 'pre',
           test: /\.(js|vue)$/,
           loader: 'eslint-loader',
           exclude: /(node_modules)|static/
-        })
+        });
       }
     },
-    vendor: ['axios'],
-    babel: {}
+    vendor: ['babel-polyfill', 'axios', 'bignumber.js', 'lodash', "@cityofzion/neon-core/lib/wallet/core", 'switcheo-js/build/main', "~/utils/eNeo"],
+    analyze: false
   },
   /*
    ** Global CSS
@@ -108,6 +121,8 @@ module.exports = {
       '/institution',
       '/wallet',
       '/tools',
+      '/lock',
+      '/faq',
       '/zh',
       '/zh/login',
       '/zh/register',
@@ -115,6 +130,8 @@ module.exports = {
       '/zh/institution',
       '/zh/wallet',
       '/zh/tools',
+      '/zh/lock',
+      '/zh/faq',
     ]
   },
 
@@ -126,7 +143,6 @@ module.exports = {
     '~/plugins/icon-font',
     '~/plugins/vueClipBoard',
     '~/plugins/i18n.js',
-    '~/plugins/high-charts.js',
     {src: '~/plugins/ga', ssr: false}
   ]
 };

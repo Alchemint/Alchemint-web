@@ -6,12 +6,18 @@
     <div class="bond">
       <div class="bond-top clearfix">
         <div class="bond-item">
-          <div class="bond-item__val" v-if="mySar">{{mySar.bondDrawedShow | numFormat}}</div>
+          <div class="bond-item__val"
+               v-if="mySar"
+               :title="setDp(mySar.bondDrawed)">{{mySar.bondDrawed | decimalPlaces(2)}}
+          </div>
           <div class="bond-item__val" v-else>--</div>
           <div class="bond-item__title">{{$t('individual.myBond.bondUsed')}}</div>
         </div>
         <div class="bond-item">
-          <div class="bond-item__val" v-if="mySar">{{mySar.bondLockedShow | numFormat}}</div>
+          <div class="bond-item__val"
+               v-if="mySar"
+               :title="mySar.bondLocked">{{mySar.bondLocked | decimalPlaces(2)}}
+          </div>
           <div class="bond-item__val" v-else>--</div>
           <div class="bond-item__title">{{$t('individual.myBond.sneoLocked')}}</div>
         </div>
@@ -27,7 +33,7 @@
         <el-button type="primary"
                    plain
                    class="bond-btn"
-                   :disabled="!mySar.bondDrawed"
+                   :disabled="Number(mySar.bondDrawed)<=0"
                    @click="opPayBackSarModal">
           {{$t('individual.myBond.payBack')}}
         </el-button>
@@ -40,11 +46,12 @@
       </div>
     </div>
 
-    <!--history dialog-->
+    <!--历史模态框-->
     <el-dialog class="sar-modal"
                :title="$t('individual.myBond.historyTitle')"
                width="1000px"
                label-position="top"
+               :lock-scroll="false"
                center
                :show-close="true"
                stripe
@@ -52,12 +59,13 @@
       <history-detail v-if="historyList" :data="historyList" type="sarC"></history-detail>
     </el-dialog>
 
-    <!--liquidation dialog-->
+    <!--清算模态框-->
     <el-dialog class="sar-modal"
                :title="$t('individual.liquidateModal.title')"
                label-position="top"
                center
                :show-close="true"
+               :lock-scroll="false"
                stripe
                :close-on-click-modal="false"
                :close-on-press-escape="false"
@@ -68,34 +76,34 @@
                :rules="rules"
                :model="liquidationForm"
                class="settle-form clearfix">
-        <el-form-item :label="$t('individual.liquidateModal.bondAmount')" class="fl" prop="BOND">
+        <el-form-item :label="$t('individual.liquidateModal.bondAmount')" class="fl" prop="bond">
           <div>
-            <el-input v-model.number="liquidationForm.BOND"
+            <el-input v-model.number="liquidationForm.bond"
                       size="small"
                       style="width: 130px"
                       v-if="mySar"
-                      :disabled="mySar.ratioAvail<=1"
+                      :disabled="parseFloat(mySar.mortgageRate)<=100"
                       @change="handleBondChange"></el-input>
             <i class="el-icon-caret-right"></i>
           </div>
           <div class="form-value">
-            {{$t('individual.liquidateModal.value')}}：${{liquidationForm.BONDV}}
+            {{$t('individual.liquidateModal.value')}}：${{liquidationForm.bondV}}
           </div>
         </el-form-item>
         <el-form-item :label="$t('individual.liquidateModal.sneoAmount')" class="fl">
-          <el-input v-model.number="liquidationForm.SNEO"
+          <el-input v-model.number="liquidationForm.sneo"
                     disabled
                     size="small"
                     style="width: 130px"></el-input>
-          <div class="form-value" v-if="sarConfig">
-            {{$t('individual.liquidateModal.value')}}:${{liquidationForm.SNEOV}}
+          <div class="form-value">
+            {{$t('individual.liquidateModal.value')}}:${{liquidationForm.sneoV}}
           </div>
         </el-form-item>
       </el-form>
       <div>
         <div class="liquidated-info mt-30 clearfix">
           <span class="fl">{{$t('individual.liquidateModal.afterLiq')}}</span>
-          <span class="fr">{{liquidationForm.rateShow}}</span>
+          <span class="fr">{{liquidationForm.rate | decimalPlaces(2)}}%</span>
         </div>
         <div class="liquidated-info mt-20 clearfix">
           <span class="fl">{{$t('individual.liquidateModal.afterStatus')}}</span>
@@ -107,6 +115,7 @@
           </span>
         </div>
       </div>
+      <el-checkbox class="mt-30" v-model="gasFee">{{$t('global.feeInfo')}}</el-checkbox>
       <div slot="footer">
         <el-button class="sar-modal-btn" @click="beforeLiquidationClose">
           {{$t('global.cancelBtn')}}
@@ -117,12 +126,13 @@
       </div>
     </el-dialog>
 
-    <!--pay back bond dialog-->
+    <!--偿还bond模态框-->
     <el-dialog class="sar-modal"
                :title="$t('individual.myBond.payBack')"
                label-position="top"
                center
                :show-close="false"
+               :lock-scroll="false"
                :close-on-click-modal="false"
                :close-on-press-escape="false"
                :visible.sync="payBackModal.show">
@@ -139,6 +149,7 @@
                    :min="0"
                    :max="payBackModal.max"></el-slider>
       </el-form>
+      <el-checkbox class="mt-30" v-model="gasFee">{{$t('global.feeInfo')}}</el-checkbox>
       <div slot="footer">
         <el-button class="sar-modal-btn"
                    @click="payBackModal.show = false">{{$t('global.cancelBtn')}}
@@ -150,30 +161,30 @@
         </el-button>
       </div>
     </el-dialog>
+
+    <!--硬件钱包签名提示-->
+    <cold-wallet-dialog :cold-wallet-dialog-visible="coldWalletDialogVisible"></cold-wallet-dialog>
   </el-card>
 </template>
 
 <script>
-  import {filterMethod, filterTime, numFormat} from '../../filters/index'
-  import {bigmath, formatPrecision, printNumber} from '../../utils'
-  import {sendDrawTransaction} from '../../api/global'
-  import sarAddr from '../../mixins/getSarAddr'
-  import checkTxid from '../../mixins/checkTxid'
+  import {sendDrawTransaction, getUtxo} from '~/api/global'
+  import sarAddr from '~/mixins/getSarAddr'
+  import checkTxid from '~/mixins/checkTxid'
   import historyDetail from '../public/historyDetail'
-  import {getSarCHistory} from '../../api/individual'
+  import {getSarCHistory, getsar4CDetailByAdd} from '~/api/individual'
   import {filter, find} from 'lodash'
+  import getLeaderPubkey from '~/mixins/getLeaderPubkey'
+  import {mapGetters} from 'vuex'
+  import {setDp, BN} from '~/utils/core'
+  import {EIGHT_POWER, LOADING_OPTION} from "~/filters/const";
+  import {filterMethod, filterTime, decimalPlaces} from '~/filters/core'
+  import sarC from '~/mixins/sarC'
 
   export default {
     name: 'MyBond',
     props: {
-      currentUser: {
-        type: Object,
-        required: true,
-      },
-      sarConfig: {
-        type: Object,
-        required: true,
-      },
+      currentUser: {},
       assets: {
         type: Array,
         required: true,
@@ -186,15 +197,15 @@
         historyList: null,
         liquidationModal: false,
         liquidationForm: {
-          BOND: '',
-          SNEO: '',
-          BONDV: '',
-          SNEOV: '',
+          bond: '',
+          sneo: '',
+          bondV: '',
+          sneoV: '',
           rate: '',
           status: '0'
         },
         rules: {
-          BOND: [
+          bond: [
             {
               required: true, validator: this.validatorBond, trigger: 'blur'
             }
@@ -205,221 +216,149 @@
           amount: 0,
           max: 0,
         },
-        disabled: false,
+        btnLocked: false,
+        gasFee: false,
       }
     },
-    mixins: [sarAddr, checkTxid],
+    computed: {
+      ...mapGetters(['typeB', 'typeA']),
+      lineRateC() {
+        if (this.typeA) {
+          return find(this.typeA, o => o.key === 'liquidate_line_rate_c').value;
+        }
+      }
+    },
+    mixins: [sarAddr, checkTxid, getLeaderPubkey, sarC],
     components: {
       historyDetail
     },
     async mounted() {
-      let mySar = await this.$parent.getSarInfo(this.sarConfig, this.currentUser.address);
-      if (mySar) {
-        this.mySar = mySar;
+      if (!this.typeB) {
+        await this.$store.dispatch('getTypeB');
       }
+      if (!this.typeA) {
+        await this.$store.dispatch('getTypeA');
+      }
+      this.getSarCInfo();
     },
     methods: {
-      //liquidate sar
+      setDp,
+      //获取我的sar信息
+      async getSarCInfo() {
+        let _mySar = await getsar4CDetailByAdd([this.currentUser.address, this.sarAddr.sarC.hash]);
+        let mySar = _mySar.result;
+        if (!mySar) {
+          this.mySar = null;
+          return;
+        }
+
+        mySar = mySar[0];
+        let status = this.getSarCStatus(mySar.locked, mySar.hasDrawed, mySar.mortgageRate, this.lineRateC);
+        mySar.status = status;
+        this.mySar = mySar;
+      },
+
+      //清算
       opLiquidationModal() {
         this.liquidationModal = true;
-        this.liquidationForm.BOND = this.getBondMax();
+        this.liquidationForm.bond = this.getBondMax();
         this.getLiquidationFormVal();
       },
       getLiquidationFormVal() {
-        let {sneo_price, liquidate_line_rate_c} = this.sarConfig;
-        let {sarLocked, sarHasDrawed, ratioAvail} = this.mySar;
+        let sneo_price = find(this.typeB, o => o.key === 'sneo_price').value;
+        let {locked, hasDrawed, mortgageRate} = this.mySar;
+
+        //bond数量
+        let bondAmount = Number(this.liquidationForm.bond);
+
+        //sneo数量
+        let sneoAmount = 0;
+        if (mortgageRate > 100) {
+          sneoAmount = new BN(this.liquidationForm.bond)
+            .div(sneo_price).dp(8, 3).toNumber();
+        } else {
+          sneoAmount = Number(locked);
+        }
+        this.liquidationForm.sneo = sneoAmount;
+
+        //sneo和bond价值
+        let bondValue = new BN(bondAmount).dp(2, 3).toString();
+        let sneoValue = new BN(this.liquidationForm.sneo).times(sneo_price).dp(2, 3).toString();
+        this.liquidationForm.bondV = bondValue;
+        this.liquidationForm.sneoV = sneoValue;
+
+        //可清算Neo(增加判断)
         let canClearNeo;
+        canClearNeo = Number(this.liquidationForm.sneo);
 
-        //bond amount
-        let mount = formatPrecision(
-          printNumber(
-            bigmath.chain(bigmath.bignumber(this.liquidationForm.BOND))
-              .multiply(bigmath.bignumber(bigmath.pow(10, 8)))
-              .done()
-          ), 0
-        );
-        mount = +mount;
-
-        //sneo amount
-        if (+ratioAvail > 1) {
-          this.liquidationForm.SNEO = formatPrecision(
-            printNumber(
-              bigmath.chain(bigmath.bignumber(this.liquidationForm.BOND))
-                .multiply(bigmath.bignumber(bigmath.pow(10, 8)))
-                .divide(bigmath.bignumber(sneo_price))
-                .done()
-            )
-          );
-        } else {
-          this.liquidationForm.SNEO = formatPrecision(
-            printNumber(
-              bigmath.chain(bigmath.bignumber(sarLocked))
-                .divide(bigmath.bignumber(bigmath.pow(10, 8)))
-                .done()
-            )
-          )
+        if (canClearNeo > locked) {
+          canClearNeo = locked;
         }
 
-        //sneo and bond value
-        this.liquidationForm.BONDV = formatPrecision(this.liquidationForm.BOND, 2);
-        this.liquidationForm.SNEOV = formatPrecision(
-          printNumber(
-            bigmath.chain(bigmath.bignumber(this.liquidationForm.SNEO))
-              .multiply(bigmath.bignumber(sneo_price))
-              .divide(bigmath.bignumber(bigmath.pow(10, 8)))
-              .done()
-          ), 2
-        );
-
-        //can clear neo
-        canClearNeo = formatPrecision(
-          printNumber(
-            bigmath.chain(bigmath.bignumber(this.liquidationForm.SNEO))
-              .multiply(bigmath.bignumber(bigmath.pow(10, 8)))
-              .done()
-          )
-        );
-        canClearNeo = +canClearNeo;
-
-
-        if (canClearNeo > sarLocked) {
-          canClearNeo = sarLocked;
-        }
-
-        //rate
-        let rate, rateShow;
-        if (Number(sarHasDrawed) === Number(mount)) {
-          rate = 0;
-          rateShow = '--';
-        } else {
-          rate = formatPrecision(
-            printNumber(
-              bigmath.chain(
-                bigmath.bignumber(
-                  bigmath.chain(bigmath.bignumber(sarLocked))
-                    .subtract(bigmath.bignumber(canClearNeo))
-                    .multiply(bigmath.bignumber(sneo_price))
-                    .done()
-                )
-              ).divide(
-                bigmath.bignumber(
-                  bigmath.chain(bigmath.bignumber(sarHasDrawed))
-                    .subtract(bigmath.bignumber(mount))
-                    .done()
-                )
-              ).divide(
-                bigmath.bignumber(bigmath.pow(10, 8))
-              ).multiply(bigmath.bignumber(100))
-                .done()
-            )
-          );
-          rateShow = formatPrecision(rate, 2) + '%';
-        }
-        rate = +rate;
+        //抵押率和状态
+        let calcHasDrawed = new BN(hasDrawed).minus(bondAmount);
+        let calcLocked = new BN(locked).minus(canClearNeo);
+        let {rate, status} = this.getRateAndStatus(calcLocked, calcHasDrawed, sneo_price, this.lineRateC);
         this.liquidationForm.rate = rate;
-        this.liquidationForm.rateShow = rateShow;
-
-        //liquidated status
-        let status;
-        if (rate >= (liquidate_line_rate_c + 50)) {
-          status = '1';
-        }
-        if (rate >= liquidate_line_rate_c && rate < (liquidate_line_rate_c + 50)) {
-          status = '2';
-        }
-        if (rate < liquidate_line_rate_c) {
-          status = '3';
-        }
-
-        if (sarLocked === 0 || sarHasDrawed === 0 || rate === 0) {
-          status = '0';
-        }
         this.liquidationForm.status = status;
       },
       validatorBond(rule, value, callback) {
         let max = Number(this.getBondMax());
         let locale = this.$i18n.locale;
+        let decimals = new BN(+value).dp();
         if (!value) {
           return callback(new Error(locale === 'en' ? 'BOND quantity cannot be empty.' : 'BOND值不能为空'));
         } else if (!Number(value)) {
           return callback(new Error(locale === 'en' ? 'BOND value must be numeric.' : 'BOND值必须为数字'))
         } else if (Number(value) > max) {
           return callback(new Error(locale === 'en' ? `The maximum BOND that can be input is ${max}` : `可投入的BOND最大值为${max}`));
+        } else if (decimals > 8) {
+          return callback(new Error(locale === 'en' ? `The number of decimal places cannot exceed 8 digits` : `小数位数不能超过8位`));
         } else {
           return callback();
         }
       },
       getBondMax() {
-        let {sneo_price, liquidate_top_rate_c} = this.sarConfig;
-        let {sarLocked, sarHasDrawed, ratioAvail} = this.mySar;
+        let sneo_price = find(this.typeB, o => o.key === 'sneo_price').value;
+        let lineTopRateC = find(this.typeA, o => o.key === 'liquidate_top_rate_c').value;
+        let {locked, hasDrawed, mortgageRate} = this.mySar;
 
-        let molecule = bigmath.chain(bigmath.bignumber(liquidate_top_rate_c))
-          .divide(bigmath.bignumber(100))
-          .subtract(bigmath.bignumber(1))
-          .done();
+        //分子
+        let molecule = new BN(lineTopRateC).div(100).minus(1).toNumber();
 
-        let denominator = bigmath.chain(
-          bigmath.bignumber(
-            bigmath.chain(bigmath.bignumber(liquidate_top_rate_c))
-              .divide(bigmath.bignumber(100))
-              .multiply(bigmath.bignumber(sarHasDrawed))
-              .done()
-          )
-        ).subtract(
-          bigmath.bignumber(
-            bigmath.chain(bigmath.bignumber(sneo_price))
-              .multiply(bigmath.bignumber(sarLocked))
-              .divide(bigmath.bignumber(bigmath.pow(10, 8)))
-              .done()
-          )
-        ).done();
+        //分母
+        let denominator = new BN(
+          new BN(lineTopRateC).div(100).times(hasDrawed)
+        ).minus(
+          new BN(locked).times(sneo_price)
+        ).toNumber();
 
-        let result = formatPrecision(
-          printNumber(
-            bigmath.chain(bigmath.bignumber(denominator))
-              .divide(bigmath.bignumber(molecule))
-              .divide(bigmath.bignumber(bigmath.pow(10, 8)))
-              .subtract(bigmath.bignumber(0.001))
-              .done()
-          )
-        );
-        result = +result;
+        //计算结果 0.0001此处为安全代码
+        let result = new BN(denominator).div(molecule).minus(0.0001).dp(8, 3).toNumber();
 
-        //sarHasDrawed
-        let mount = formatPrecision(
-          printNumber(
-            bigmath.chain(bigmath.bignumber(sarHasDrawed))
-              .divide(bigmath.bignumber(bigmath.pow(10, 8)))
-              .done()
-          )
-        );
-
-        mount = +mount;
-
-        if (+ratioAvail > 1) {
-          return result > mount ? mount : result;
+        //比较
+        mortgageRate = parseFloat(mortgageRate);
+        if (mortgageRate > 100) {
+          return result > hasDrawed ? hasDrawed : result;
         } else {
-          return mount;
+          return hasDrawed;
         }
       },
       handleBondChange(val) {
         if (Number(val)) {
           let max = this.getBondMax();
-          this.liquidationForm.BOND = this.liquidationForm.BOND > max ? max : this.liquidationForm.BOND;
+          this.liquidationForm.bond = this.liquidationForm.bond > max ? max : this.liquidationForm.bond;
           this.getLiquidationFormVal();
         }
       },
       beforeLiquidationClose() {
         this.$refs['liquidationForm'].resetFields();
         this.liquidationModal = false;
+        this.btnLocked = false;
       },
       liquidateSar() {
         this.$refs['liquidationForm'].validate((valid) => {
           if (valid) {
-            if (this.disabled) {
-              return;
-            }
-            this.disabled = true;
             this.launchLiquidateSar();
           } else {
             return false;
@@ -427,59 +366,68 @@
         });
       },
       async launchLiquidateSar() {
-        const loading = this.$loading({
-          lock: true,
-          text: '',
-          spinner: 'el-icon-loading',
-          background: 'rgba(0, 0, 0, 0.7)'
-        });
+        if (this.btnLocked) {
+          return;
+        }
+        this.btnLocked = true;
+        const loading = this.$loading(LOADING_OPTION);
 
         let {wif, address} = this.currentUser;
-        let amount = formatPrecision(
-          printNumber(
-            bigmath.chain(bigmath.bignumber(this.liquidationForm.BOND))
-              .multiply(bigmath.bignumber(bigmath.pow(10, 8)))
-              .done()
-          ), 0
-        );
+        let amount = new BN(this.liquidationForm.bond).times(EIGHT_POWER).integerValue().toNumber();
 
         let scAddr = this.sarAddr.sarC.hash;
         let type = 'rescueT';
         let params = [
-          "(addr)" + this.mySar.addr,
+          "(addr)" + this.mySar.owner,
           "(addr)" + address,
           "(int)" + amount
         ];
 
-        let r = await eNeo.callC(wif, scAddr, type, params);
+        let utxo = await getUtxo([address]);
+        let payfee = this.gasFee ? '0.001' : false;
+
+        //签名
+        let tempObj = {
+          wif,
+          scAddr,
+          utxos: utxo.result ? utxo.result : null,
+          type,
+          params,
+        };
+        let r = await this.getSignature("callc", tempObj, payfee, loading);
+        if (!r) {
+          loading.close();
+          this.btnLocked = false;
+          return;
+        }
 
         sendDrawTransaction([r.rawData]).then(draw => {
           this.checkTxid(r, draw, () => {
             this.liquidationModal = false;
+            this.btnLocked = false;
             loading.close();
-            location.reload();
+            this.updateViewData();
           });
         }).catch(() => {
           this.liquidationModal = false;
-          this.disabled = false;
+          this.btnLocked = false;
+          loading.close();
         });
-
       },
 
-      //pay back bond
+      //更新数据
+      updateViewData() {
+        this.$emit('update-data');
+      },
+
+      //偿还bond
       opPayBackSarModal() {
         this.payBackModal.show = true;
-        let bondDrawed = formatPrecision(
-          printNumber(
-            bigmath.chain(bigmath.bignumber(this.mySar.bondDrawed))
-              .divide(bigmath.bignumber(bigmath.pow(10, 8)))
-              .done()
-          )
-        );
+        let bondDrawed = this.mySar.bondDrawed;
         bondDrawed = +bondDrawed;
 
         let max;
-        let sdusdVal = find(this.assets, o => o.symbol === 'SDUSD');
+        let sdusdVal = find(this.assets, o => o.assetid === this.sarAddr.sdusd.hash);
         let balance = sdusdVal ? sdusdVal.balance : 0;
         balance = +balance;
 
@@ -492,25 +440,14 @@
         this.payBackModal.max = max;
       },
       async payBackBond() {
-        if (this.disabled) {
+        if (this.btnLocked) {
           return;
         }
-        this.disabled = true;
-        const loading = this.$loading({
-          lock: true,
-          text: '',
-          spinner: 'el-icon-loading',
-          background: 'rgba(0, 0, 0, 0.7)'
-        });
+        this.btnLocked = true;
+        const loading = this.$loading(LOADING_OPTION);
 
         let {wif, address} = this.currentUser;
-        let amount = formatPrecision(
-          printNumber(
-            bigmath.chain(bigmath.bignumber(this.payBackModal.amount))
-              .multiply(bigmath.bignumber(bigmath.pow(10, 8)))
-              .done()
-          ), 0
-        );
+        let amount = new BN(this.payBackModal.amount).times(EIGHT_POWER).integerValue().toNumber();
 
         let scAddr = this.sarAddr.sarC.hash;
         let type = 'withdrawT';
@@ -519,28 +456,44 @@
           "(int)" + amount
         ];
 
-        let r = await eNeo.callC(wif, scAddr, type, params);
+        let utxo = await getUtxo([address]);
+        let payfee = this.gasFee ? '0.001' : false;
+
+        //签名
+        let tempObj = {
+          wif,
+          scAddr,
+          utxos: utxo.result ? utxo.result : 0,
+          type,
+          params
+        };
+        let r = await this.getSignature("callc", tempObj, payfee, loading);
+        if (!r) {
+          loading.close();
+          this.btnLocked = false;
+          return;
+        }
 
         sendDrawTransaction([r.rawData]).then(draw => {
           this.checkTxid(r, draw, () => {
             this.payBackModal.show = false;
+            this.btnLocked = false;
+            this.updateViewData();
             loading.close();
-            location.reload();
           });
         }).catch(() => {
           this.payBackModal.show = false;
-          this.disabled = false;
+          this.btnLocked = false;
         });
       },
 
-      //get bond history detail
+      //历史记录
       async getHistoryDetail() {
-        let params = [this.mySar.sarTxid, 100, 1];
+        let params = [this.mySar.txid, 100, 1];
         let historyList = await getSarCHistory(params);
         this.historyList = historyList.result;
         if (historyList) {
-          this.historyList = filter(this.historyList,
-            o => Number(o.type) === 9 || Number(o.type) === 10);
+          this.historyList = filter(this.historyList, o => Number(o.type) === 9 || Number(o.type) === 10);
         } else {
           this.historyList = [];
         }
@@ -550,7 +503,7 @@
     filters: {
       filterTime,
       filterMethod,
-      numFormat
+      decimalPlaces,
     }
   }
 </script>
@@ -560,23 +513,28 @@
 
   .bond {
     height: 200px;
+
     &-top {
       border-bottom: 1px solid $--border-color-base;
       height: 110px;
+
       .bond-item {
         float: left;
         height: 109px;
         width: 50%;
         border-right: 1px solid $--border-color-base;
         padding-left: 20px;
+
         &:last-child {
           border-right: 0;
         }
+
         &__val {
           margin-top: 36px;
           font-size: 18px;
           font-weight: bold;
         }
+
         &__title {
           font-size: 12px;
           color: #667;
@@ -585,9 +543,11 @@
         }
       }
     }
+
     &-bottom {
       padding: 29px 0;
       text-align: center;
+
       .bond-btn {
         width: 92px;
         height: 32px;
@@ -595,6 +555,7 @@
         text-align: center;
         padding: 0;
         margin-left: 27px;
+
         &:first-child {
           margin-left: 0;
         }

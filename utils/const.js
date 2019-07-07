@@ -41,6 +41,9 @@ export const sarAddrList = {
     },
     oracle: {
       hash: "0xfde69a7dd2a1c948977fb3ce512158987c0e2197"
+    },
+    lock: {
+      hash: '0x85d3e487098b43fb1df5d2ca5d5201bdb19cc43d',
     }
   },
   testNet: {
@@ -48,7 +51,7 @@ export const sarAddrList = {
       hash: "0x789afc2bba96905d628cb41598c8f8cfcf213b58"
     },
     sarC: {
-      hash: "0x56ee43dabb7e9b1bbfc2b059a459a165d8cacf5e"
+      hash: "0x1775f1af5df77ff876b2d7a06e256f1388199dc7"
     },
     sdusd: {
       hash: "0x80fe8494d517a0c9caaabd5ddffd48593f67d70f"
@@ -64,6 +67,9 @@ export const sarAddrList = {
     },
     oracle: {
       hash: "0xfde69a7dd2a1c948977fb3ce512158987c0e2197"
+    },
+    lock: {
+      hash: '0xd84af467b65a1e6c120c1a89bd93ff9b2137a37b'
     }
   },
   pri: {
@@ -87,6 +93,9 @@ export const sarAddrList = {
     },
     oracle: {
       hash: "0xfde69a7dd2a1c948977fb3ce512158987c0e2197"
+    },
+    lock: {
+      hash: '0x1b8c076996f09c35a54978ff7f1d0151201302fe'
     }
   }
 };

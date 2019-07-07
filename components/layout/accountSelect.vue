@@ -5,7 +5,7 @@
                  @command="changeCurrentUser"
                  placement="bottom">
       <span class="nav-right-dropdown-current">
-        {{$t('nav.account')}}：{{currentUser.address | filterUser}}
+        {{currentUser.address | filterUser}}
       </span>
       <el-dropdown-menu class="nav-right-dropdown-menu" slot="dropdown" v-if="users">
         <el-dropdown-item v-for="item in users"
@@ -20,7 +20,7 @@
 </template>
 
 <script>
-  import {setCurrentUer} from '../../utils/login'
+  import {setCurrentUer} from '~/utils/login'
 
   export default {
     name: 'AccountSelect',

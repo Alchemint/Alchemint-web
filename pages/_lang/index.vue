@@ -1,5 +1,5 @@
 <script>
-  import individual from './individual/index'
+  import individual from './individual.vue'
 
   export default individual;
 </script>

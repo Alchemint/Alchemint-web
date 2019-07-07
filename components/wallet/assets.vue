@@ -1,5 +1,6 @@
 <template>
   <div class="assets mt-30">
+    <!--钱包信息-->
     <el-card class="border-card assets-info">
       <div slot="header" class="border-card-header">
         <span class="border-card-header__title">{{$t('wallet.walletInfo')}}</span>
@@ -25,24 +26,31 @@
             </el-popover>
           </div>
         </div>
-        <div class='wallet-info__item mt-30'>
+        <div class='wallet-info__item mt-30' v-if="!isColdWallet">
           <div class="wallet-info__title">{{$t('wallet.myWif')}}
-            <el-radio-group class="current-wif-btn" v-model="hideDisplay" size="mini">
-              <el-radio-button :label="false">{{$t('global.hide')}}</el-radio-button>
-              <el-radio-button :label="true">{{$t('global.display')}}</el-radio-button>
-            </el-radio-group>
+            <el-button type="primary"
+                       class="small-btn"
+                       style="margin-left: 32px"
+                       v-clipboard:copy="currentUser.wif"
+                       v-clipboard:success="onCopy"
+                       v-clipboard:error="onError">{{$t('global.copy')}}
+            </el-button>
           </div>
           <div class="wallet-info__content">
-            <span>{{currentUser.wif | filterWif(hideDisplay)}}</span>
+            <span>{{currentUser.wif | filterWif(wifDisplay)}}</span>
+            <icon-font class="icon-eyes"
+                       :name="wifDisplay?'icon-yanjing':'icon-yanjing-bi'"
+                       @click.native="wifDisplay = !wifDisplay"></icon-font>
           </div>
         </div>
       </div>
     </el-card>
 
+    <!--账户资产-->
     <el-card class="border-card mt-30">
       <div slot="header" class="border-card-header">
         <span class="border-card-header__title">{{$t('wallet.assetBalance')}}</span>
-        <span class="border-card-header__totalVal">(${{totalVal | numFormat}})</span>
+        <span class="border-card-header__totalVal">(${{totalVal | decimalPlaces(3)}})</span>
       </div>
       <el-table class="no-border-table cell-first-highlight"
                 stripe
@@ -61,7 +69,9 @@
                          align="right"
                          width="200">
           <template slot-scope="scope">
-            {{scope.row.showBalance | numFormat}}
+            <span :title="setDp(scope.row.balance)">
+              {{scope.row.balance | decimalPlaces(2)}}
+            </span>
           </template>
         </el-table-column>
         <el-table-column prop="showPrice"
@@ -69,7 +79,8 @@
                          align="right"
                          width="300">
           <template slot-scope="scope">
-            ${{scope.row.showPrice | numFormat}}
+            <span :title="'$'+setDp(scope.row.price)">
+              ${{scope.row.price | decimalPlaces(4)}}</span>
           </template>
         </el-table-column>
         <el-table-column prop="totalVal"
@@ -77,7 +88,9 @@
                          align="right"
                          min-width="150">
           <template slot-scope="scope">
-            ${{scope.row.totalVal | numFormat}}
+            <span :title="'$'+setDp(scope.row.value)">
+               ${{scope.row.value | decimalPlaces(4)}}
+            </span>
           </template>
         </el-table-column>
         <el-table-column align="right" width="100">
@@ -85,7 +98,7 @@
             <el-button type="danger"
                        plain
                        class="small-btn"
-                       @click.native="resuceSarShow(scope.row)"
+                       @click.native="liqSarModalShow(scope.row)"
                        v-if="scope.row.type==='nep55' && Number(scope.row.status)===3">
               {{ $t('global.liquidate')}}
             </el-button>
@@ -94,7 +107,7 @@
       </el-table>
     </el-card>
 
-    <!--清算模态框-->
+    <!--B端清算模态框-->
     <el-dialog class="sar-modal settle-modal"
                :title="$t('wallet.liquidate.title')"
                width="360px"
@@ -104,46 +117,51 @@
                stripe
                :close-on-click-modal="false"
                :close-on-press-escape="false"
-               :visible.sync="resuceModal">
+               :visible.sync="liquidateModal">
       <div class="asset-liquidate" v-if="currentAsset">
         <div class="asset-liquidate-item clearfix">
           <span class="fl">{{$t('wallet.liquidate.sar')}}</span>
           <span class="fr">
-            <b class="green">{{currentAsset.showBalance}} {{currentAsset.name}}</b>
-            (${{currentAsset.totalVal}})
+            <b class="green">{{currentAsset.balance}} {{currentAsset.symbol}}</b>
+            (${{currentAsset.value}})
           </span>
         </div>
         <div class="mt-40 asset-liquidate-item clearfix">
           <span class="fl">{{$t('wallet.liquidate.sds')}}</span>
           <span class="fr">
-            <b class="green">{{sdsNum}} SDS</b>
-            (${{sdsTotalVal}})
+            <b class="green">{{usedSdsBalance}} SDS</b>
+            (${{usedSdsValue}})
           </span>
         </div>
       </div>
       <div slot="footer">
-        <el-button class="sar-modal-btn" @click="resuceModal = false">
+        <el-button class="sar-modal-btn" @click="liquidateModal = false">
           {{$t('global.cancelBtn')}}
         </el-button>
-        <el-button class="sar-modal-btn" type="primary" :disabled="disabled" @click="resuceSar">
+        <el-button class="sar-modal-btn" type="primary" @click="liquidateSar">
           {{$t('global.confirmBtn')}}
         </el-button>
       </div>
     </el-dialog>
+
+    <!--硬件钱包弹框-->
+    <cold-wallet-dialog :cold-wallet-dialog-visible="coldWalletDialogVisible"></cold-wallet-dialog>
   </div>
 </template>
 
 <script>
   let qrCode = require('qrcode');
-  import sarAddr from '../../mixins/getSarAddr'
-  import {sendDrawTransaction} from '../../api/global'
-  import checkTxid from '../../mixins/checkTxid'
-  import {bigmath, formatPrecision, printNumber} from '../../utils'
-  import getSarB from '../../mixins/getSarB'
-  import getSarConfig from '../../mixins/getSarConfig'
-  import clipboard from '../../mixins/clipboard'
-  import {forEach} from 'lodash'
-  import {numFormat} from '../../filters'
+  import getSarAddr from "~/mixins/getSarAddr";
+  import {sendDrawTransaction} from '~/api/global'
+  import checkTxid from '~/mixins/checkTxid'
+  import clipboard from '~/mixins/clipboard'
+  import {forEach, find} from 'lodash'
+  import getLeaderPubkey from '~/mixins/getLeaderPubkey'
+  import {setDp, BN} from '~/utils/core'
+  import {decimalPlaces} from '~/filters/core'
+  import {getsar4BDetailByAdd} from '~/api/institution'
+  import {LOADING_OPTION} from '~/filters/const'
+  import {mapGetters} from 'vuex'
 
   export default {
     name: 'WalletAssets',
@@ -158,12 +176,12 @@
     },
     data() {
       return {
-        hideDisplay: false,
-        currentAsset: null,
-        sdsNum: '',
-        sdsTotalVal: '',
-        resuceModal: false,
-        disabled: false,
+        wifDisplay: false, //wif的显示隐藏
+        currentAsset: null, //当前可清算的B端资产
+        btnLocked: false, //按钮是否锁定,避免多次弹框
+        usedSdsBalance: '', //当前可清算B端资产使用了多少sds
+        usedSdsValue: '', //当前可清算B端资产使用sds的资产价值
+        liquidateModal: false, //清算模态框
       }
     },
     computed: {
@@ -174,56 +192,66 @@
         if (this.assets) {
           let val = 0;
           forEach(this.assets, item => {
-            val += Number(item.totalVal);
+            val += Number(item.value);
           });
-          return formatPrecision(val, 3);
+          return val;
         }
-        return formatPrecision(0, 3);
-      }
+        return 0;
+      },
+      ...mapGetters(['typeB']),
     },
-    mixins: [sarAddr, checkTxid, getSarB, getSarConfig, clipboard],
+    mixins: [
+      getSarAddr,
+      checkTxid,
+      clipboard,
+      getLeaderPubkey
+    ],
     mounted() {
       qrCode.toDataURL(this.currentUser.address, {errorCorrectionLevel: 'H'}, function (err, url) {
         document.getElementById('qrCodeImg').src = url;
       });
     },
     filters: {
-      filterWif(val, hideDisplay) {
-        if (hideDisplay) {
+      filterWif(val, wifDisplay) {
+        if (wifDisplay) {
           return val;
         }
         return val.replace(/./g, '*');
       },
-      numFormat,
+      decimalPlaces
     },
     methods: {
-      async resuceSarShow(item) {
-        this.resuceModal = true;
-        this.currentAsset = item;
-        let tempObj = await this.getSarB(item.owner);
-        let sdsNum = bigmath.chain(bigmath.bignumber(item.balance))
-          .multiply(bigmath.bignumber(tempObj.sarLocked))
-          .divide(bigmath.bignumber(tempObj.sarHasDrawed))
-          .done();
-        this.sdsNum = formatPrecision(
-          printNumber(sdsNum), 3
-        );
+      setDp,
 
-        let sarConfig = await this.getSarConfig();
-        this.sdsTotalVal = formatPrecision(
-          printNumber(
-            bigmath.chain(bigmath.bignumber(sdsNum))
-              .multiply(bigmath.bignumber(sarConfig.sds_price))
-              .divide(bigmath.bignumber(bigmath.pow(10, 8)))
-              .done()
-          ), 3
-        )
-      },
-      async resuceSar() {
-        if (this.disabled) {
+      //获取相关sds所占比例
+      async liqSarModalShow(item) {
+        this.liquidateModal = true;
+        this.currentAsset = item;
+
+        //获取当前Sar的状态
+        let _sarB = await getsar4BDetailByAdd([item.owner, this.sarAddr.sarB.hash]);
+        let sarB = _sarB.result;
+        if (!sarB) {
           return;
         }
-        this.disabled = true;
+        sarB = sarB[0];
+        //计算抵押了sds的数量和价值
+        let usedSdsBalance = new BN(item.balance).times(sarB.locked).div(sarB.hasDrawed).toString();
+        this.usedSdsBalance = usedSdsBalance;
+
+        if (!this.typeB) {
+          await this.$store.dispatch('getTypeB');
+        }
+        let sds_price = find(this.typeB, o => o.key === 'sds_price').value;
+        let usedSdsValue = new BN(usedSdsBalance).times(sds_price).toString();
+        this.usedSdsValue = usedSdsValue;
+      },
+      //发起B端清算
+      async liquidateSar() {
+        if (this.btnLocked) {
+          return;
+        }
+        this.btnLocked = true;
 
         let {wif, address} = this.currentUser;
         let scAddr = this.sarAddr.sarB.hash;
@@ -234,34 +262,41 @@
           "(addr)" + sarAddr
         ];
 
-        let r = eNeo.callC(wif, scAddr, type, params);
+        //获取签名信息
+        let tempObj = {
+          wif,
+          scAddr,
+          type,
+          params,
+        };
+        let r = await this.getSignature("callc", tempObj);
+        if (!r) {
+          this.btnLocked = false;
+          return;
+        }
 
         sendDrawTransaction([r.rawData]).then(draw => {
           this.checkTxid(r, draw, () => {
-            this.resuceModal = false;
-            this.disabled = false;
+            this.liquidateModal = false;
+            this.btnLocked = false;
             this.claimRedeemSds();
           });
         }).catch(() => {
-          this.disabled = false;
+          this.btnLocked = false;
         })
       },
-      claimRedeemSds() {
-        this.$alert(`${this.sdsNum}($${this.currentAsset.totalVal})${this.$t('wallet.liquidate.info')}`, '提示', {
+      //将sds转入账户
+      async claimRedeemSds() {
+        this.$alert(`${this.usedSdsBalance}($${this.currentAsset.value})${this.$t('wallet.liquidate.info')}`, '', {
           confirmButtonText: this.$t('global.confirmBtn'),
           showClose: false,
           customClass: 'asset-alert',
           callback: () => {
-            if (this.disabled) {
+            if (this.btnLocked) {
               return;
             }
-            this.disabled = true;
-            const loading = this.$loading({
-              lock: true,
-              text: '',
-              spinner: 'el-icon-loading',
-              background: 'rgba(0, 0, 0, 0.7)'
-            });
+            this.btnLocked = true;
+            const loading = this.$loading(LOADING_OPTION);
 
             let {wif, address} = this.currentUser;
             let scAddr = this.sarAddr.sarB.hash;
@@ -270,13 +305,24 @@
               "(addr)" + address,
             ];
 
-            let r = eNeo.callC(wif, scAddr, type, params);
-
-            sendDrawTransaction([r.rawData]).then(draw => {
-              this.checkTxid(r, draw, () => {
+            //获取签名信息
+            let tempObj = {
+              wif,
+              scAddr,
+              type,
+              params,
+            };
+            this.getSignature("callc", tempObj).then(r => {
+              if (!r) {
                 loading.close();
-                location.reload();
-              });
+                return;
+              }
+              sendDrawTransaction([r.rawData]).then(draw => {
+                this.checkTxid(r, draw, () => {
+                  loading.close();
+                  location.reload();
+                });
+              })
             })
           }
         });
@@ -304,19 +350,28 @@
       vertical-align: middle;
       margin-left: 6px;
     }
+
     .wallet-info {
       &__title {
         font-size: 12px;
         color: #9090AB;
       }
+
       &__content {
         margin-top: 14px;
         font-size: 14px;
         font-weight: bold;
       }
+
       .qr-control {
         margin-left: 10px;
         cursor: pointer;
+      }
+
+      .icon-eyes {
+        margin-left: 10px;
+        font-size: 18px;
+        color: $--color-primary;
       }
     }
   }
@@ -324,6 +379,7 @@
   .asset-liquidate {
     padding: 85px 20px 50px;
     color: #667;
+
     &-item {
       line-height: 20px;
       border-bottom: 1px solid $--border-color-base;
@@ -335,6 +391,7 @@
   .current-wif-btn {
     font-size: 12px;
     margin-left: 20px;
+
     .el-radio-button__inner {
       padding: 2px 4px !important;
       font-size: 12px !important;
@@ -347,6 +404,7 @@
     height: 100px !important;
     padding: 2px 0 !important;
     text-align: center;
+
     .qr-img {
       width: 96px;
       height: 96px;

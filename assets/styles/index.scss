@@ -192,8 +192,10 @@ a:hover {
   }
 }
 
-.el-table__empty-block {
-  height: 270px !important;
+.empty-img-table {
+  .el-table__empty-block {
+    height: 270px !important;
+  }
 }
 
 //cover el-form-item
@@ -212,6 +214,7 @@ a:hover {
     box-shadow: none;
 
     &-header {
+      position: relative;
       font-size: 18px;
       color: $--color-primary;
       font-weight: bold;
@@ -264,7 +267,7 @@ a:hover {
 //cover el-dialog
 .sar-modal {
   .el-dialog {
-    width: 360px;
+    width: 380px;
     &__header {
       border-bottom: 1px solid #eee;
       padding: 20px;
@@ -396,4 +399,28 @@ a:hover {
 //cover el-dialog modal opacity
 .v-modal {
   opacity: .3 !important;
+}
+
+//未登录立即登录按钮
+.login-now-container {
+  width: 360px;
+  .el-message-box__header {
+    border-bottom: 1px solid #eee;
+    padding: 20px;
+    .el-message-box__title {
+      color: $--color-primary;
+      font-weight: bold;
+    }
+  }
+
+  .login-now-btn {
+    width: 140px;
+    height: 40px;
+    font-size: 14px;
+  }
+}
+
+//message弹框自定义样式
+.copy-msg-btn{
+  top:80px !important;
 }

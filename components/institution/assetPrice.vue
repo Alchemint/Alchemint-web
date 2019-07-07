@@ -5,18 +5,20 @@
     </div>
     <el-table class="no-border-table cell-first-highlight"
               stripe
-              :data="data"
+              :data="anchorPrices"
               height="290"
               style="width: 100%">
       <el-table-column :prop="$i18n.locale==='en'?'name':'zhName'"
                        :label="$t('institution.name')"
                        width="100"></el-table-column>
-      <el-table-column prop="rate"
+      <el-table-column prop="price"
                        :label="$t('institution.lastestPrice')"
                        align="right"
                        width="140">
         <template slot-scope="scope">
-          ${{scope.row.rate | numFormat}}
+          <span :title="setDp(scope.row.price)">
+            ${{scope.row.price | decimalPlaces(4)}}
+          </span>
         </template>
       </el-table-column>
       <el-table-column align="right"
@@ -27,68 +29,68 @@
 </template>
 
 <script>
-  import {formatPrecision, bigmath, printNumber} from '../../utils'
-  import {forEach} from 'lodash'
-  import {numFormat} from '../../filters'
+  import {decimalPlaces} from '~/filters/core'
+  import {setDp} from '../../utils/core'
+  import {forEach, find} from 'lodash'
+  import {mapGetters} from 'vuex'
 
   export default {
     name: 'AssetPrice',
-    props: {
-      sarConfig: {
-        type: Object,
-        required: true,
-      }
-    },
-    filters: {
-      numFormat,
-    },
     data() {
       return {
-        data: [
+        anchorPrices: [  //锚定物资产价格列表
           {
             name: 'SDS',
             zhName: 'SDS',
-            rate: '',
-            price: 'sds_price',
+            anchor: 'sds_price',
+            price: 0,
           },
           {
             name: 'EUR',
             zhName: '欧元',
-            rate: '',
-            price: 'anchor_type_eur',
+            anchor: 'anchor_type_eur',
+            price: 0,
           },
           {
             name: 'YEN',
             zhName: '日元',
-            rate: '',
-            price: 'anchor_type_jpy',
+            anchor: 'anchor_type_jpy',
+            price: 0,
           },
           {
             name: 'GBP',
             zhName: '英镑',
-            rate: '',
-            price: 'anchor_type_gbp',
+            anchor: 'anchor_type_gbp',
+            price: 0,
           },
           {
             name: 'GOLD',
             zhName: '黄金',
-            rate: '',
-            price: 'anchor_type_gold',
+            anchor: 'anchor_type_gold',
+            price: 0,
           },
-        ]
+        ], //资产价格列表
       }
     },
-    mounted() {
-      forEach(this.data, item => {
-        item.rate = formatPrecision(
-          printNumber(
-            bigmath.chain(bigmath.bignumber(this.sarConfig[item.price]))
-              .divide(bigmath.bignumber(bigmath.pow(10, 8)))
-              .done()
-          ), 4
-        )
-      });
+    computed: {
+      ...mapGetters(['typeB'])
     },
-    methods: {}
+    filters: {
+      decimalPlaces
+    },
+    mounted() {
+      this.setAnchorPrice();
+    },
+    methods: {
+      setDp,
+      //B端资产价格
+      async setAnchorPrice() {
+        await this.$store.dispatch('getTypeB');
+        forEach(this.anchorPrices, item => {
+          let configObj = find(this.typeB, o => o.key === item.anchor);
+          item.price = configObj ? configObj.value : 0;
+        });
+      },
+    }
   }
 </script>

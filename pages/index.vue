@@ -1,5 +1,5 @@
 <script>
-  import index from './_lang/index'
+  import index from './_lang/index.vue'
 
   export default index;
 </script>

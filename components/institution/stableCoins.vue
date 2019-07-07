@@ -19,7 +19,7 @@
                        align="right"
                        width="80">
         <template slot-scope="scope">
-          <span>{{scope.row.anchorType | filterMethod($t('anchorTypes'))}}</span>
+          <span>{{scope.row.anchor | filterMethod($t('anchorTypes'))}}</span>
         </template>
       </el-table-column>
       <el-table-column prop="sarHasDrawed"
@@ -27,8 +27,10 @@
                        align="right"
                        min-width="160">
         <template slot-scope="scope">
-          <span>{{scope.row.sarHasDrawedShow | numFormat}}</span>
-          <span class="coin-val">(${{scope.row.sarHasDrawedTranUsd | numFormat}})</span>
+          <span :title="setDp(scope.row.hasDrawed)">
+            {{scope.row.hasDrawed | decimalPlaces(2)}}</span>
+          <span :title="setDp(scope.row.nep55Value)" class="coin-val">
+            (${{scope.row.nep55Value | decimalPlaces(2)}})</span>
         </template>
       </el-table-column>
       <el-table-column prop="sarLocked"
@@ -36,16 +38,18 @@
                        align="right"
                        min-width="160">
         <template slot-scope="scope">
-          <span>{{scope.row.sarLockedShow | numFormat}}</span>
-          <span class="coin-val">(${{scope.row.sarLockedTranUsd | numFormat}})</span>
+          <span :title="setDp(scope.row.locked)">
+            {{scope.row.locked | decimalPlaces(2)}}</span>
+          <span :title="setDp(scope.row.sdsValue)" class="coin-val">
+            (${{scope.row.sdsValue | decimalPlaces(2)}})</span>
         </template>
       </el-table-column>
-      <el-table-column prop="ratioAvailShow"
+      <el-table-column prop="mortgageRate"
                        :label="$t('institution.marginRate')"
                        align="right"
                        min-width="140">
         <template slot-scope="scope">
-          {{scope.row.ratioAvailShow | numFormat}}
+          {{scope.row.mortgageRate | decimalPlaces(2)}}%
         </template>
       </el-table-column>
       <el-table-column align="right" width="20"></el-table-column>
@@ -54,48 +58,47 @@
 </template>
 
 <script>
-  import {getSarBType} from '../../api/institution'
-  import {filterMethod, numFormat} from '../../filters'
-  import getSarAddr from '../../mixins/getSarAddr'
+  import {getsar4BDetailList} from '~/api/institution'
+  import {filterMethod, decimalPlaces} from '~/filters/core'
+  import {setDp} from '~/utils/core'
+  import getSarAddr from '~/mixins/getSarAddr'
 
   export default {
     name: 'StableCoin',
     data() {
       return {
-        stableCoinList: null,
-        loading: true,
+        stableCoinList: null, //稳定币列表数据,
+        loading: true, //加载数据,
       }
+    },
+    filters: {
+      filterMethod,
+      decimalPlaces
     },
     mixins: [getSarAddr],
     mounted() {
       this.getStableCoinList();
     },
-    filters: {
-      filterMethod,
-      numFormat
-    },
     methods: {
+      setDp,
+      //B端稳定币列表
       async getStableCoinList() {
-        let scAddr = this.sarAddr.sarB.hash;
-        let params = [1, scAddr, 10000, 1];
-        let _stableCoinList = await getSarBType(params);
-        let stableCoinList = _stableCoinList.result;
-        let tempArr = [];
-        if (stableCoinList) {
-          for (let i = 0, len = stableCoinList.length; i < len; i++) {
-            let item = stableCoinList[i];
-            let data = await this.$parent.getSarInfo(item.addr);
-            if (data) {
-              tempArr.push(data);
-            }
-          }
-          this.loading = false;
-        } else {
-          this.loading = false;
-        }
+        //设置loading为true
+        this.loading = true;
 
-        this.stableCoinList = tempArr;
-      }
+        //获取数据
+        let scAddr = this.sarAddr.sarB.hash;
+        let params = [1, scAddr, 1000, 1];
+        let _stableCoinList = await getsar4BDetailList(params);
+        let stableCoinList = _stableCoinList.result;
+        if (!stableCoinList) {
+          this.stableCoinList = [];
+          this.loading = false; //关闭loading
+          return false;
+        }
+        this.stableCoinList = stableCoinList;
+        this.loading = false; //关闭loading
+      },
     }
   }
 </script>

@@ -4,34 +4,77 @@ export default {
     institution: '机构',
     wallet: '钱包',
     tools: '工具',
+    lock: '锁仓',
     account: '账户',
     logout: '注销',
     help: '帮助',
     termsService: '服务条款',
     userManual: '操作手册',
     video: '视频演示',
-    contact: '联系我们'
+    contact: '联系我们',
+    //maintenanceState: '系统当前处于维护状态，暂不建议使用。预计于新加坡时间 X月X日 15：00 前恢复正常。',
+    maintenanceState: '系统当前处于维护状态，暂不建议使用。',
   },
   login: {
     json: '导入Keystore',
     pwd: '密码',
     wif: '请输入您的私钥',
-    loginByKey: '通过私钥登录',
-    loginByJson: '通过Keystore登录',
-    jsonErr: 'Keystore或密码不正确',
+    loginByKey: '私钥登录',
+    loginByJson: 'KeyStore登录',
+    loginByCold: '硬钱包登录',
+    coldWalletInfo: '<li>请连接你的硬件钱包</li>' +
+      '<li>并打开NEO App</li>',
+    jsonErr: 'KeyStore或密码不正确',
     wifErr: '私钥不正确，请重新输入'
   },
   register: {
     wallet: '钱包名',
     pwd: '密码',
     confirmPwd: '确认密码',
-    walletErr: '请输入1-20位密码',
-    pwdErr: '请输入1-20位密码',
+    walletErr: '请输入不超过20位的字母、数字或符号',
+    pwdErr: '请输入不超过20位的字母、数字或符号',
     confirmPwdErr: '两次密码不一致',
     succTitle: '您的Keystore文件已生成<br>请务必下载并保管好您的Keystore文件',
     succInfo: ' <li>Keystore一旦丢失，本平台无法帮助找回。</li>\n' +
       '          <li>登录时可使用Keystore+密码登陆您的账户，也可通过导入密钥的方式登陆。</li>',
     downLoadBtn: '下载Keystore',
+  },
+  lock: {
+    title: '锁仓',
+    openTit: '开通锁仓账户',
+    openBtn: '开通锁仓账户',
+    benefitAddrTit: '多链收益地址',
+    benefitAddr: '收益地址',
+    addAddrBtn: '添加',
+    editBtn: '修改',
+    inputPhl: '请输入',
+    basic: {
+      title: '基本情况',
+      type: "类型",
+      additionalBenefits: '额外收益',
+      benefit: '收益',
+      status: '状态',
+      operation: '操作',
+      deposit: '充值',
+      draw: '提取',
+      lockNum: '锁仓数量',
+      remainTime: '剩余时间',
+      withDrawSds:'提取SDS',
+      withDrawSdsInfo:'您将提取本期全部锁仓的SDS至您的钱包。',
+      depositLock: 'SDS锁仓充值',
+      depositLockNum: '锁仓充值数量',
+      depositInfoTit:'提示',
+      depositInfo: '本期锁仓一旦确定，中途不可更改,直到锁仓倒计时结束方可提取和进行下次锁仓充值。',
+    },
+    history: {
+      title: '历史记录',
+      assetAddr: '资产地址',
+      type: '类型',
+      lockType: '锁仓类型',
+      quantity: '数量',
+      lockTime: '操作时间',
+      TX: 'TX',
+    }
   },
   wallet: {
     asset: '资产',
@@ -72,7 +115,7 @@ export default {
       amount: '你将把',
       to: '发往',
       fee: '手续费',
-    }
+    },
   },
   individual: {
     statusInfo: '<li>当0&lt;SAR抵押率&lt;{lineRate}%时，SAR状态栏显示为"危急"；</li>' +
@@ -94,9 +137,12 @@ export default {
       warnTitle: '注意',
       warnInfo: '<li>请务必不要关闭，或者手动刷新本页面！</li>' +
         '<li>否则可能会导致转换失败和数量错误！</li>' +
-        '<li>请耐心等待右上角侧2个30s倒计时结束。</li>',
-      transferAgain: '转化不成功，请点击再次转化',
-      transferAgainBtn: '再次转化'
+        '<li>请耐心等待右上角的2个30s倒计时结束。</li>',
+      transferAgain: '转化不成功，请点击',
+      transferAgainBtn: '继续转化',
+      transferAgainTitle: '继续执行转化SNEO->NEO',
+      continueBtn: '执行',
+      warnTip: '由于SNEO转NEO时需要2个连续的区块确认交易，故转化过程中若发生页面刷新或关闭等情况，会导致交易中断和数量显示问题。如发生该情况，请点击【继续转化】，继续执行原本被中断的转化任务，待区块确认后数量即可恢复正常。'
     },
     systemStatus: {
       title: '系统状态',
@@ -105,8 +151,10 @@ export default {
       allRate: '全局抵押率',
       liquidateRate: '清算触发抵押率',
       liquidateDis: '清算折扣',
-      issuingRate: '年发行费用',
+      issuingRate: '年费率',
       deptTop: 'SDUSD全局发行上限',
+      feePaid: '全局已缴手续费 (SDS)',
+      predictFeeTotal: "全局待缴费手续费(SDS)"
     },
     sarCList: {
       title: '全局SAR-C列表',
@@ -118,7 +166,9 @@ export default {
       liquidationPrice: '清算触发价(SNEO)',
       status: 'SAR状态',
       history: '历史',
-      liquidate: '清算'
+      liquidate: '清算',
+      all: '全部',
+      filter: '筛选',
     },
     mySar: {
       title: '我的SAR',
@@ -155,7 +205,14 @@ export default {
           '<li style="margin-top: 10px">若抵押率跌破{lineRate}%，您的SAR可被他人清算，同时系统会根据清算数额和清算折扣自动扣除一定数量的罚金。</li>',
         cancelBtn: '我再想想',
         confirmBtn: '我明白风险，继续执行',
-      }
+      },
+      quickSarModal: {
+        title: '一键发币',
+        collateralizeNeo: '抵押NEO',
+        issueSdusd: '发行SDUSD',
+      },
+      quickSarInfo: '<li>本功能可自动执行多个步骤（NEO->SDUSD）。</li>' +
+        '<li>执行过程若关闭或手动刷新页面，将导致自动化过程中断，但资产不受影响，您可手动继续执行未完成的步骤。</li>'
     },
     myBond: {
       title: '我的BOND',
@@ -231,6 +288,7 @@ export default {
   global: {
     loading: '加载中',
     loginBtn: '登录',
+    loginBtn1: '登录',
     registerBtn: '注册',
     otherwise: '或者',
     copy: '复制',
@@ -253,6 +311,8 @@ export default {
       quantity: '数量',
       tx: 'TX',
     },
+    fee:'手续费',
+    feeInfo:'优先处理此笔交易 （ 支付0.001 GAS ）',
   },
   tools: {
     contractAddr: {
@@ -264,6 +324,27 @@ export default {
       sdsAddr: 'SDS地址',
       sar4BAddr: 'SAR4B地址',
       tokenAddr: 'Tokenized Asset地址',
+    },
+    browse: {
+      title: '浏览器',
+      search: '搜索',
+      searchPhl: '请输入您想查询的地址/交易ID',
+      assetInfo: '资产信息',
+      transactionInfo: '交易信息',
+      txid: '交易ID',
+      type: '类型',
+      netFee: '网络费用',
+      sysFee: '系统费用',
+      size: '大小',
+      height: '区块高度',
+      time: '时间',
+      input: '输入',
+      address: '地址',
+      asset: '资产',
+      output: '输出',
+      from: '转出',
+      to: '转入',
+      value: '金额',
     }
   },
   envs: [
@@ -426,4 +507,145 @@ export default {
       label: '提取SDS'
     },
   ],
+  faq: {
+    title: '常见问题',
+    search: '搜索',
+    /*'desc-1': {
+      question: '发币流程是什么？',
+      answer: '<div>你将至少需要持有1个或以上的NEO才能使用平台发行稳定币。</div>\n' +
+        '<div>发币流程为：</div>' +
+        '<ol style="margin: 0">' +
+        '<li>将NEO转换为SNEO</li>' +
+        '<li>抵押SNEO</li>' +
+        '<li>发行SDUSD</li>' +
+        '</ol>'
+    },
+    'desc-2': {
+      question: '抵押率是什么？',
+      answer: '抵押率 = SAR中抵押的SNEO价值 / 所发行的SDUSD价值',
+    },
+    'desc-3': {
+      question: '各种SAR状态代表什么？',
+      answer: '<ul>' +
+        '<li>当 0<150%时，SAR 状态栏显示为“紧急”；在“紧急”状态中，他人可以参与“清算”（爆仓），并使该SAR抵押率回到150%以上。</li>' +
+        '<li>当 150%<=SAR 抵押率<200%时，SAR 状态显示为“不安全”；在“不安全”状态中，他人无法“清算”该SAR。但我们建议用户在“不安全”状态时抵押更多的SNEO或者归还SDUSD，以提高抵押率，降低由于NEO下跌导致的被他人爆仓的风险。</li>' +
+        '<li>当 SAR 抵押率>=200%时，SAR 状态显示为“安全”，被爆仓风险相对较低。</li>' +
+        '</ul>'
+    },
+    'desc-4': {
+      question: '还币流程是什么？',
+      answer: '<div>归还流程为：' +
+        '<ol>' +
+        '<li>充值SDS </li>' +
+        '<li>归还SDUSD并选择归还数量</li>' +
+        '<li>提取抵押物SNEO</li>' +
+        '<li>将SNEO转化为NEO</li>' +
+        '</ol>' +
+        '</div>',
+    },
+    'desc-5': {
+      question: '我的SAR抵押率过低时，该怎么办？',
+      answer: '<div>当抵押率较低时，可以选择下面其中一种方式来提高你的抵押率：<ol>' +
+        '<li>添加抵押物SNEO</li>' +
+        '<li>归还SDUSD</li>' +
+        '</ol></div>',
+    },
+    'desc-6': {
+      question: '他人的SAR抵押率低于150%时，我能干什么，对我有什么好处？',
+      answer: '当他人的SAR低于150%抵押率时，你可以参与清算。任何持有 SDUSD 并开通SAR的用户均可参与清算，并以较低的折扣获得相应的抵押资产。最高可将抵押率清算到160%。但当清算后，抵押率回升到 150%及以上时，则不再继续允许对该 SAR 进行清算。\n' +
+        '清算所获得的NEO的价格比市场价低10%。',
+    },
+    'desc-7': {
+      question: '建议抵押率是多少？',
+      answer: '建议抵押率高于200%，越高越好。',
+    },
+    'desc-8': {
+      question: 'SNEO是什么？',
+      answer: 'SNEO 是由 NGD（NEO Global Development）发布的符合 NEP-5 规范的合约资产，SNEO 可由 NEO 一比一地对换，并且支持退回操作。该合约的目的是将 NEO 进行全局资产的合约映射，使全局资产 NEO 可以方便地在合约内部流转，支持由合约调用转账，而且本合约已经提供提取GAS的功能。'
+    },
+    'desc-9': {
+      question: '稳定币发行费率是什么？',
+      answer: '发行费率是根据所发行的SDUSD数量来计算的，将以SDS形式支付',
+    },
+    'desc-10': {
+      question: '如何计费？',
+      answer: '归还SDUSD时，所需缴纳的SDS费率计算公式为:（当前区块高度 - 借出SDUSD的区块高度）* 归还数额 * 费率 / SDS市价',
+    },
+    'desc-11': {
+      question: '目前费率是多少？',
+      answer: '目前平台稳定币费率为2%'
+    },
+    'desc-12': {
+      question: '抵押着的NEO会分发GAS么？',
+      answer: '会',
+    },
+    'desc-13': {
+      question: 'GAS的分发机制是什么？',
+      answer: '一般情况下，针对钱包内的NEO所产生的GAS，每月初分发一次。针对SNEO产生的GAS暂时不会分发，SNEO转化为NEO后的下一个月初，系统会把所累计的GAS一次性分发给用户。',
+    },
+    'desc-14': {
+      question: '如何获取NEO&SDS市场价的？',
+      answer: '<ul>' +
+        '<li>目前已选取10个NEO喂价节点，系统将进行实时排序，并取得中位数作为系统喂价。系统每6分钟按顺序更新其中一个节点的价格。</li>' +
+        '<li>SDS的价格则取自于2个喂价节点的平均数。</li>' +
+        '</ul>'
+    },
+    'desc-15': {
+      question: 'Oracle喂价器的喂价节点有哪些？',
+      answer: '<div>' +
+        '<div>NEO和GAS的喂价节点：Bibox, Binance, Bitfinex, EXX, Bittrex, Huobi, OKEX, Gate, HitBTC 和ZB</div>' +
+        '<div>SDS的喂价节点：Bilaxy 和 Coinmex</div>' +
+        '</div>',
+    },
+    'desc-16': {
+      question: 'SDUSD可以在哪里使用？',
+      answer: '<div>DUSD目前可以在以下场景使用：' +
+        '<ol>' +
+        '<li>使用SDUSD参与清算</li>' +
+        '<li>在Switcheo（https://switcheo.exchange）以及CoinMex（https://coinmex.com）进行交易 </li>' +
+        '</ol></div>',
+    },
+    'desc-17': {
+      question: '如何获取更多帮助？',
+      answer: '如需帮助，请邮件至service@alchemint.io询问.',
+    },
+    'desc-18': {
+      question: 'SDUSD如何保持稳定，机制是什么?',
+      answer: '保持SDUSD的稳定是通过超额抵押、清算奖励、伺机者参与、风控参数调节等一些列机制来实现的。在该机制下，市场参与者有动力在SDUSD脱锚时通过抵押发行、清算、购买和抛售等一些列行为，对SDUSD的价格进行修正，并从中获得收益。',
+    },
+    'desc-19': {
+      question: '如何使用O3钱包发行SDUSD？',
+      answer: 'O3钱包目前仅支持一键发币，尚不支持在O3钱包内归还SDUSD。请参考“如何使用一键发币功能？”获取更多信息',
+    },
+    'desc-20': {
+      question: '如何使用一键发币功能？',
+      answer: '<div>使用一键发币，只需要选择你想生成X数量的SDUSD以及你想抵押Y数量的NEO，即可发行SDUSD。' +
+        '<div>点击一件发币后，系统将在后台进行如下操作：</div>' +
+        '<ol>' +
+        '<li>开启SAR</li>' +
+        '<li>转换Y数量的NEO成为SNEO</li>' +
+        '<li>存入Y数量的SNEO进入SAR</li>' +
+        '<li>产生X数量的SDUSD</li>' +
+        '</ol></div>',
+    },
+    'desc-21': {
+      question: 'SDS和SDUSD的区别是什么？',
+      answer: '<div>SDS：阿基米德项目的平台通证。在 SAR-C 中，充当稳定币回收时所需抵扣的手 续费。SDS价格与大多数数字货币一样，会有大幅波动。</div>' +
+        '<div>SDUSD是价格锚定1美元的稳定币，其价格不会剧烈波动。</div>',
+    },
+    'desc-22': {
+      question: 'SDUSD全局发行上限是什么？如果到达上限会发生什么？',
+      answer: 'SDUSD全局发行上限是阿基米德基金会依照目前平台发展情况以及NEO市值规模所设置的。当SDUSD的发行量到达SDUSD全局发行上限时，用户将无法发行SDUSD，直至有用户归还SDUSD。\n' +
+        '阿基米德基金会将依照情况逐步提高SDUSD全局发行上限。',
+    },
+    'desc-23': {
+      question: 'SAR-B和SAR-C的区别是什么？',
+      answer: '<div>SAR-B：主要面向商业机构用户，机构通过链下的 100%法币储备以及链上的通 过智能合约锁定的 SDS 作为保证金来发行稳定币。每个 SAR 会锁定 SDS，并根 据锁定 SDS 的市值以及设置的最低保证金比例决定机构可以发行的稳定币数量。目前最低保证金比例为 50%。SAR-B创建者可以自行定义该币的缩写。</div>' +
+        '<div>SAR-C：主要面向个人用户和商业机构，通过超额抵押数字资产的方式发行稳定币，稳定币名字为 SDUSD。SDUSD是标准的NEP-5代币。</div>',
+    },
+    'desc-24': {
+      question: 'SDUSD是否安全？',
+      answer: 'SDUSD的背后拥有至少150%的NEO资产储备，也就是说每一个SDUSD的背后都有至少价值1.5美元的NEO作为抵押资产。如果NEO价格下降使得SDUSD背后的抵押资产减少至低于1.5倍，此时伺机者有权利以90%的市场价格购买SAR中的部分NEO并替SAR的创建者归还其部分债务，通过此方式使得SDUSD的资产抵押率始终保持在1.5倍以上。',
+    },*/
+  }
 }

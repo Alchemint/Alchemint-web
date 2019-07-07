@@ -14,12 +14,15 @@
       <el-table-column prop="symbol"
                        :label="$t('individual.relevantAssets.type')"
                        width="120"></el-table-column>
-      <el-table-column prop="showBalance"
+      <el-table-column prop="balance"
                        :label="$t('individual.relevantAssets.quantity')"
                        align="right"
                        width="150">
         <template slot-scope="scope">
-          {{scope.row.showBalance | numFormat}}
+          <span :title="setDp(scope.row.balance)" v-if="currentUser">
+            {{scope.row.balance | decimalPlaces(2)}}
+          </span>
+          <span v-else>--</span>
         </template>
       </el-table-column>
       <el-table-column prop="showPrice"
@@ -27,7 +30,9 @@
                        align="right"
                        width="180">
         <template slot-scope="scope">
-          ${{scope.row.showPrice | numFormat}}
+          <span :title="'$'+setDp(scope.row.price)">
+            ${{scope.row.price | decimalPlaces(4)}}
+          </span>
         </template>
       </el-table-column>
       <el-table-column prop="totalVal"
@@ -35,7 +40,10 @@
                        align="right"
                        min-width="160">
         <template slot-scope="scope">
-          ${{scope.row.totalVal | numFormat}}
+          <span :title="'$'+setDp(scope.row.value)" v-if="currentUser">
+          ${{scope.row.value | decimalPlaces(4)}}
+          </span>
+          <span v-else>--</span>
         </template>
       </el-table-column>
     </el-table>
@@ -43,12 +51,13 @@
 </template>
 
 <script>
-  import {orderBy, forEach} from 'lodash';
-  import {numFormat} from "../../filters";
+  import {forEach} from 'lodash';
+  import {decimalPlaces} from "~/filters/core";
+  import {setDp} from '../../utils/core'
 
   export default {
     name: 'MyAsset',
-    props: ['assets'],
+    props: ['assets', 'currentUser'],
     computed: {
       loading() {
         return this.assets ? false : true;
@@ -62,14 +71,16 @@
               result.push(item);
             }
           });
-          let tempArr = orderBy(result, ['total_val'], ['desc']);
-          return tempArr;
+          return result;
         }
         return [];
       }
     },
     filters: {
-      numFormat,
+      decimalPlaces,
+    },
+    methods: {
+      setDp,
     }
   }
 </script>

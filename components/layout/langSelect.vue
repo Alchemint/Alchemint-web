@@ -3,6 +3,7 @@
     <el-dropdown class='nav-right-dropdown'
                  @command="handleSetLanguage"
                  placement="bottom"
+                 :show-timeout="100"
                  trigger="hover">
       <span class="nav-right-dropdown-current">
         <img v-if="$i18n.locale==='zh'" class="current-lang" src="~/assets/img/zh.png" alt="lang">

@@ -12,35 +12,35 @@
       <div class="technical-panel">
         <div class="technical-panel__content">
           <div class="technical-panel__title">{{$t('tools.contractAddr.sdusdAddr')}}</div>
-          <div class="technical-panel__info color-txid">{{sarAddr.sdusd.hash}}</div>
+          <div class="technical-panel__info color-txid">{{sarAddr.sdusd.hash | filterTxid}}</div>
         </div>
         <div class="technical-panel__child">
           <div class="clearfix"
                v-for="item in sdusdData"
                :key="item.key">
             <span class="fl">{{$i18n.locale==='zh'?item.zhName:item.enName}}</span>
-            <span class="fr color-txid">{{item.hash}}</span>
+            <span class="fr color-txid">{{item.hash | filterTxid}}</span>
           </div>
         </div>
       </div>
       <div class="technical-panel">
         <div class="technical-panel__content">
           <div class="technical-panel__title">{{$t('tools.contractAddr.sar4CAddr')}}</div>
-          <div class="technical-panel__info color-txid">{{sarAddr.sarC.hash}}</div>
+          <div class="technical-panel__info color-txid">{{sarAddr.sarC.hash | filterTxid}}</div>
         </div>
         <div class="technical-panel__child">
           <div class="clearfix"
                v-for="item in sarCData"
                :key="item.key">
             <span class="fl">{{$i18n.locale==='zh'?item.zhName:item.enName}}</span>
-            <span class="fr color-txid">{{item.hash}}</span>
+            <span class="fr color-txid">{{item.hash | filterTxid}}</span>
           </div>
         </div>
       </div>
       <div class="technical-panel">
         <div class="technical-panel__content">
           <div class="technical-panel__title">{{$t('tools.contractAddr.oracleAddr')}}</div>
-          <div class="technical-panel__info color-txid">{{sarAddr.oracle.hash}}</div>
+          <div class="technical-panel__info color-txid">{{sarAddr.oracle.hash | filterTxid}}</div>
         </div>
       </div>
     </div>
@@ -48,34 +48,34 @@
       <div class="technical-panel">
         <div class="technical-panel__content">
           <div class="technical-panel__title">{{$t('tools.contractAddr.sdsAddr')}}</div>
-          <div class="technical-panel__info color-txid">{{sarAddr.sds.hash}}</div>
+          <div class="technical-panel__info color-txid">{{sarAddr.sds.hash | filterTxid}}</div>
         </div>
       </div>
       <div class="technical-panel">
         <div class="technical-panel__content">
           <div class="technical-panel__title">{{$t('tools.contractAddr.sar4BAddr')}}</div>
-          <div class="technical-panel__info color-txid">{{sarAddr.sarB.hash}}</div>
+          <div class="technical-panel__info color-txid">{{sarAddr.sarB.hash | filterTxid}}</div>
         </div>
         <div class="technical-panel__child">
           <div class="clearfix"
                v-for="item in sarBData"
                :key="item.key">
             <span class="fl">{{$i18n.locale==='zh'?item.zhName:item.enName}}</span>
-            <span class="fr color-txid">{{item.hash}}</span>
+            <span class="fr color-txid">{{item.hash | filterTxid}}</span>
           </div>
         </div>
       </div>
       <div class="technical-panel">
         <div class="technical-panel__content">
           <div class="technical-panel__title">{{$t('tools.contractAddr.tokenAddr')}}</div>
-          <div class="technical-panel__info color-txid">{{sarAddr.newToken.hash}}</div>
+          <div class="technical-panel__info color-txid">{{sarAddr.newToken.hash | filterTxid}}</div>
         </div>
         <div class="technical-panel__child">
           <div class="clearfix"
                v-for="item in tokenData"
                :key="item.key">
             <span class="fl">{{$i18n.locale==='zh'?item.zhName:item.enName}}</span>
-            <span class="fr color-txid">{{item.hash}}</span>
+            <span class="fr color-txid">{{item.hash | filterTxid}}</span>
           </div>
         </div>
       </div>
@@ -84,10 +84,11 @@
 </template>
 
 <script>
-  import {getBlockCount} from '../../api/global'
-  import getSarAddr from '../../mixins/getSarAddr'
-  import {getStorage} from '../../api/global'
+  import {getBlockCount} from '~/api/global'
+  import getSarAddr from '~/mixins/getSarAddr'
+  import {getStorage} from '~/api/global'
   import {forEach} from 'lodash'
+  import eNeo from '~/utils/eNeo'
 
   export default {
     name: 'TechnicalParams',
@@ -189,6 +190,14 @@
 
         })
       },
+    },
+    filters:{
+      filterTxid(val){
+        if(!val){
+          return val
+        }
+        return val.slice(2);
+      }
     }
   }
 </script>

@@ -6,8 +6,8 @@
     <div slot="content">
       <ul class="tooltip-ul"
           v-html="$t('individual.statusInfo',{
-                      'lineRate':sarConfig.liquidate_line_rate_c,
-                      'topRate':sarConfig.liquidate_line_rate_c + 50
+                      'lineRate': lineRateC,
+                      'topRate':lineRateC + 50
                     })">
 
       </ul>
@@ -17,12 +17,19 @@
 </template>
 
 <script>
+  import {find} from 'lodash'
+
   export default {
     name: 'StatusTooltip',
     props: {
-      sarConfig: {
+      typeA: {
         required: true,
-        type: Object,
+        type: Array,
+      }
+    },
+    computed: {
+      lineRateC() {
+        return find(this.typeA, o => o.key === 'liquidate_line_rate_c').value;
       }
     }
   }

@@ -1,7 +1,7 @@
 <template>
   <el-dialog :title="$t('nav.termsService')"
              custom-class="sar-service-modal"
-             :visible.sync="dialogVisible"
+             :visible.sync="sarServiceDisplay"
              :close-on-click-modal="false"
              :close-on-press-escape="false"
              :show-close="false"
@@ -290,7 +290,7 @@
         <div class="content">If we cannot resolve the dispute through good-faith negotiations, you and we agree that any
           dispute arising
           under this Agreement shall be finally settled in binding arbitration, on an individual basis, in accordance
-          with the American Arbitration Association's rules for arbitration of consumer-related disputes and you and
+          with the Singapore Arbitration Association's rules for arbitration of consumer-related disputes and you and
           Alchemint hereby expressly waive trial by jury and right to participate in a class action lawsuit or
           class-wide arbitration. The arbitration will be conducted by a single, neutral arbitrator and shall take place
           in the county or parish in which you reside, or another mutually agreeable location, in the English language.
@@ -366,7 +366,7 @@
         <ul class="content">
           <li>Unlawful Activity: Activity which would violate, or assist in violation of, any law, statute, ordinance,
             or regulation, sanctions programs administered in any relevant country, including but not limited to the
-            U.S. Department of Treasury's Office of Foreign Assets Control ("OFAC"), or which would involve proceeds of
+            Singapore. Department of Treasury's Office of Foreign Assets Control, or which would involve proceeds of
             any unlawful activity; publish, distribute or disseminate any unlawful material or information
           </li>
           <li>Abuse Other Users: Interfere with another individual's or entity's access to or use of any Services;
@@ -388,6 +388,11 @@
             affiliation with Alchemint.
           </li>
         </ul>
+      </div>
+      <div>
+         <span class="last-modified">
+        {{$i18n.locale==='zh'?'最后修订：2018年12月28日':'Last Revised: 3 December 2018'}}
+      </span>
       </div>
     </div>
     <div v-else class="sar-service-content">
@@ -526,7 +531,7 @@
         </div>
         <h2 class="sub-title">12.2约束仲裁</h2>
         <div class="content">
-          如果我们无法通过善意谈判解决争议，您和我们同意，任何争议将依据美国仲裁协会关于消费者相关仲裁的规则，根据本协议产生的任何争议应最终以个人身份在具有约束力的仲裁中解决。您和Alchemint明确放弃陪审团的审判和参与集体诉讼或全班仲裁的权利。仲裁将由一名中立的仲裁员进行，并应在您居住的县或教区或双方同意的地点以英语进行。仲裁员可以授予有管辖权的法院可以给予的任何救济，包括经法律授权的律师费，仲裁决定可以在任何法院强制执行。根据您的要求，听证会可以亲自或通过电话进行，仲裁员可以提供简报提交和确定动议，无需口头听证。在执行本协议的任何诉讼或诉讼中，胜诉方有权获得费用和律师费。
+          如果我们无法通过善意谈判解决争议，您和我们同意，任何争议将依据新加波仲裁协会关于消费者相关仲裁的规则，根据本协议产生的任何争议应最终以个人身份在具有约束力的仲裁中解决。您和Alchemint明确放弃陪审团的审判和参与集体诉讼或全班仲裁的权利。仲裁将由一名中立的仲裁员进行，并应在您居住的县或教区或双方同意的地点以英语进行。仲裁员可以授予有管辖权的法院可以给予的任何救济，包括经法律授权的律师费，仲裁决定可以在任何法院强制执行。根据您的要求，听证会可以亲自或通过电话进行，仲裁员可以提供简报提交和确定动议，无需口头听证。在执行本协议的任何诉讼或诉讼中，胜诉方有权获得费用和律师费。
         </div>
         <div class="content">如果仲裁员或仲裁管理员将对您征收申请费或其他管理费用，我们将根据您的要求向您报销此类费用或费用将超过您在其他情况下必须支付的费用或费用。 在法庭上。
           如果仲裁管理员的规则或适用法律要求，我们还将支付额外费用或费用。
@@ -566,7 +571,7 @@
           您不会使用此服务执行以下任何操作：
         </div>
         <ul class="content">
-          <li>非法活动：在任何相关国家管理的制裁计划活动，违反或协助违反任何法律，法令，条例或法规，包括但不限于美国财政部外国资产控制办公室（“OFAC“），或涉及任何非法活动的收益;发布，分发或传播任何非法材料或信息
+          <li>非法活动：在任何相关国家管理的制裁计划活动，违反或协助违反任何法律，法令，条例或法规，包括但不限于新加波财政部外国资产控制办公室，或涉及任何非法活动的收益;发布，分发或传播任何非法材料或信息
           </li>
           <li>
             侵犯其他用户：干扰其他个人或实体探访或使用任何服务;诽谤，侵犯，勒索，骚扰，追踪，威胁或以其他方式触犯或侵犯他人的合法权利（例如但不限于隐私，公开和知识产权）;煽动，威胁，促进，促进或鼓励仇恨，种族歧视或对他人的暴力行为;未经适当同意，收集或以其他方式从本网站汇集有关他人的信息，包括但不限于电子邮件地址
@@ -577,11 +582,13 @@
           </li>
         </ul>
       </div>
-    </div>
-    <div slot="footer" class="sar-service-footer clearfix">
-      <span class="last-modified">
+      <div>
+         <span class="last-modified">
         {{$i18n.locale==='zh'?'最后修订：2018年12月28日':'Last Revised: 3 December 2018'}}
       </span>
+      </div>
+    </div>
+    <div slot="footer" class="sar-service-footer clearfix">
       <el-button class="accept-btn"
                  type="primary"
                  @click="acceptService">
@@ -594,15 +601,16 @@
 <script>
   export default {
     name: 'SarService',
-    data() {
-      return {
-        dialogVisible: true,
+    props: {
+      sarServiceDisplay: {
+        type: Boolean,
+        required: true
       }
     },
     methods: {
       acceptService() {
-        this.dialogVisible = false;
-        localStorage.setItem('readSarService', 'true');
+        this.$parent.sarServiceDisplay = false;
+        localStorage.setItem('readSarService', '1'); //0:not read  1:read
       }
     }
   }
@@ -614,10 +622,11 @@
 
   .sar-service-modal {
     margin: 90px auto 0 !important;
-    width: 1200px !important;
-    padding: 0 110px 0 150px;
+    width: 1000px !important;
+    padding: 0 85px 0 115px;
     .el-dialog__header {
       padding: 40px 0;
+      height: 100px;
       .el-dialog__title {
         font-size: 30px;
         color: $--color-primary;
@@ -625,11 +634,11 @@
       }
     }
     .el-dialog__body {
-      max-height: 420px;
+      max-height: 408px;
       overflow-y: auto;
       padding: 0;
       .sar-service-content {
-        margin-right: 40px;
+        margin-right: 30px;
       }
       .title {
         font-size: 16px;
@@ -647,20 +656,21 @@
         line-height: 19px;
         text-align: justify;
       }
+      .last-modified {
+        margin-top: 20px;
+        color: $--color-primary;
+        font-weight: bold;
+      }
     }
     .el-dialog__footer {
-      padding: 40px 0;
+      padding: 30px 0;
+      text-align: center;
       .sar-service-footer {
         line-height: 32px;
-        .last-modified {
-          float: left;
-          color: $--color-primary;
-        }
         .accept-btn {
-          float: right;
           height: 32px;
           line-height: 32px;
-          width: 120px;
+          width: 144px;
           text-align: center;
           padding: 0;
         }
